@@ -1,26 +1,15 @@
-node_modules
+# all that start with a dot except .gitignore
+.*
+!.gitignore
 
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
+# Web-generated files
+node_modules
 /build
 
-# OS
-.DS_Store
-Thumbs.db
+# Rust-generated files
+/target/
 
-# Env
-.env
-.env.*
-!.env.example
-!.env.test
+temp/
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-
-# Rust related
-target/
+# # lock files
+# **/**.lock

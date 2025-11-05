@@ -15,10 +15,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
+name = "dev_utils"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b40728a1147b5c540cb8293c66c76c485852f954fa53f0b88c86b70e2f8e1ac"
+
+[[package]]
 name = "glyph"
 version = "0.0.1"
 dependencies = [
+ "logic_tracer",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "logic_tracer"
+version = "0.0.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5bd587fa91eba707d14ce8295b3146598a43ecae63e56d7d5d15c855177f542"
+dependencies = [
+ "dev_utils",
 ]
 
 [[package]]
