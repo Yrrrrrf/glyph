@@ -11,5 +11,5 @@ node_modules
 
 temp/
 
-# # lock files
-# **/**.lock
+# lock files
+**/**.lock
