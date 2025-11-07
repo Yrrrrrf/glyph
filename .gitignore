@@ -13,3 +13,6 @@ temp/
 
 # lock files
 **.lock
+
+# project specific ignores
+x8086/
