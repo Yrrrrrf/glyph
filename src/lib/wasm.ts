@@ -1,7 +1,7 @@
 // src/lib/wasm.ts
 
 // Import the default init function and all named exports from the wasm-pack generated code.
-import init, { greet } from './pkg/glyph.js';
+import init, { greet } from "./pkg/glyph.js";
 
 // --- Direct WASM Function Exports ---
 export { greet };
@@ -17,23 +17,22 @@ let wasmReadyPromise: Promise<void> | null = null;
  * @returns {Promise<void>} A promise that resolves when the module is ready.
  */
 export function initWasm(): Promise<void> {
-	if (wasmReadyPromise === null) {
-		wasmReadyPromise = init()
-			.then(() => {
-				console.log('✅ Glyph WASM module initialized successfully.');
-			})
-			.catch((error) => {
-				console.error('❌ Error initializing Glyph WASM module:', error);
-				// Reset the promise on failure to allow a potential retry.
-				wasmReadyPromise = null;
-				// Re-throw the error so the calling component knows initialization failed.
-				throw error;
-			});
-	}
-	// Return the existing promise to any subsequent callers.
-	return wasmReadyPromise;
+  if (wasmReadyPromise === null) {
+    wasmReadyPromise = init()
+      .then(() => {
+        console.log("✅ Glyph WASM module initialized successfully.");
+      })
+      .catch((error) => {
+        console.error("❌ Error initializing Glyph WASM module:", error);
+        // Reset the promise on failure to allow a potential retry.
+        wasmReadyPromise = null;
+        // Re-throw the error so the calling component knows initialization failed.
+        throw error;
+      });
+  }
+  // Return the existing promise to any subsequent callers.
+  return wasmReadyPromise;
 }
-
 
 /**
  * Represents the initialization state of the WebAssembly module.
@@ -43,4 +42,3 @@ export function initWasm(): Promise<void> {
  */
 // let wasmState: 'loading' | 'ready' | 'error' = $state('loading');
 // let errorMessage = $state('');
-
