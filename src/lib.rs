@@ -15,6 +15,7 @@ pub fn greet(name: &str) {
     alert(&format!("Hello, {}!", name));
 }
 
+
 // pub fn add(left: u64, right: u64) -> u64 {
 //     left + right
 // }
