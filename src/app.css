@@ -4,3 +4,10 @@
 @plugin "daisyui" {
   themes: all;
 }
+
+@layer components {
+  .badge {
+    line-height: 1.2;
+    vertical-align: middle;
+  }
+}

@@ -81,10 +81,11 @@ _start:
 		</div>
 		<div class="flex-1">
 			<h2 class="text-lg font-semibold mb-2">Analysis Panel</h2>
-			<AnalysisPanel
+				<AnalysisPanel
 				tokens={analysisTokens}
 				onTokenHover={handleTokenHover}
-			/>
+				highlightedInfo={highlightedInfo}
+				/>
 		</div>
 	</main>
 </div>
