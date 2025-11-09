@@ -11,7 +11,6 @@
 	// is first rendered in the browser.
 	onMount(async () => {
 		await init();
-		console.log('')
 	});
 </script>
 
