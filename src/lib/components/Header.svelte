@@ -1,4 +1,6 @@
 <script lang="ts">
+    import ThemeSelector from "./ThemeSelector.svelte";
+
 	let { onAnalyze } = $props<{
 		onAnalyze: () => void;
 	}>();
@@ -7,6 +9,7 @@
 <header class="bg-base-200 p-4 flex items-center justify-between">
 	<div class="flex items-center space-x-2">
 		<h1 class="text-xl font-bold">Glyph</h1>
+		<ThemeSelector />
 	</div>
 	<div class="flex space-x-2">
 		<button class="btn btn-primary flex items-center" onclick={onAnalyze}>
