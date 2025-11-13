@@ -1,8 +1,10 @@
+pub mod lex;
+pub mod parse;
+
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
-
     // Import JavaScript's console.log function
     // #[wasm_bindgen(js_namespace = console)]
     // fn log(s: &str);
