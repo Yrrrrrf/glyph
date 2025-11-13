@@ -5,8 +5,8 @@ mod lex;
 mod parse;
 mod tokens;
 
-use chumsky::Parser;
 use crate::tokens::AssemblyToken;
+use chumsky::Parser;
 
 fn main() {
     let code = r#"
@@ -28,9 +28,7 @@ start:
     }
 
     println!("\n=== CONVERTED FOR PARSER ===");
-    let parse_tokens: Vec<parse::Token> = tokens.iter()
-        .map(|t| t.to_parse_token())
-        .collect();
+    let parse_tokens: Vec<parse::Token> = tokens.iter().map(|t| t.to_parse_token()).collect();
 
     println!("{:#?}", parse_tokens);
 

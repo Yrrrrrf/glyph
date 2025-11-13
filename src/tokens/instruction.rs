@@ -6,14 +6,14 @@ define_tokens!(Instruction {
     // Data Transfer
     Mov => ["MOV"], Push => ["PUSH"], Pop => ["POP"], Xchg => ["XCHG"],
     // Arithmetic
-    Add => ["ADD"], Sub => ["SUB"], Mul => ["MUL"], Div => ["DIV"], 
+    Add => ["ADD"], Sub => ["SUB"], Mul => ["MUL"], Div => ["DIV"],
     Inc => ["INC"], Dec => ["DEC"], Neg => ["NEG"],
     // Logic
     And => ["AND"], Or => ["OR"], Xor => ["XOR"], Not => ["NOT"],
     // Control Flags
     Clc => ["CLC"], Stc => ["STC"], Cmc => ["CMC"], Cld => ["CLD"], Std => ["STD"],
     // Conditional Jump
-    Je => ["JE"], Jne => ["JNE"], Jz => ["JZ"], Jnz => ["JNZ"], 
+    Je => ["JE"], Jne => ["JNE"], Jz => ["JZ"], Jnz => ["JNZ"],
     Jg => ["JG"], Jl => ["JL"], Jge => ["JGE"], Jle => ["JLE"],
     // Control Transfer
     Jmp => ["JMP"], Call => ["CALL"], Ret => ["RET"],
@@ -24,8 +24,13 @@ define_tokens!(Instruction {
 /// Instruction classification for analysis
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum InstructionType {
-    DataTransfer, Arithmetic, Logic, ControlFlags, 
-    ControlTransfer, ConditionalJump, Interrupt,
+    DataTransfer,
+    Arithmetic,
+    Logic,
+    ControlFlags,
+    ControlTransfer,
+    ConditionalJump,
+    Interrupt,
 }
 
 impl Instruction {

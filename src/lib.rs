@@ -6,8 +6,8 @@ pub mod lex;
 pub mod parse;
 pub mod tokens;
 
-use wasm_bindgen::prelude::*;
 use crate::lex::AssemblyLexer;
+use wasm_bindgen::prelude::*;
 // use crate::tokens::AssemblyToken;
 
 #[wasm_bindgen]

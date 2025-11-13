@@ -6,7 +6,9 @@ use serde::Serialize;
 
 /// Core trait that all tokens must implement
 pub trait Token: Debug {
-    fn from_str(s: &str) -> Option<Self> where Self: Sized;
+    fn from_str(s: &str) -> Option<Self>
+    where
+        Self: Sized;
     fn to_string(&self) -> String;
 }
 
@@ -19,7 +21,7 @@ macro_rules! define_tokens {
         pub enum $name {
             $($variant),+
         }
-        
+
         impl Token for $name {
             fn from_str(s: &str) -> Option<Self> {
                 let upper = s.to_uppercase();
@@ -28,7 +30,7 @@ macro_rules! define_tokens {
                     _ => None
                 }
             }
-            
+
             fn to_string(&self) -> String {
                 match self {
                     $(Self::$variant => String::from($($str),+)),+
@@ -39,20 +41,20 @@ macro_rules! define_tokens {
 }
 
 // Re-export token modules
+pub mod constant;
 pub mod instruction;
 pub mod pseudoinstruction;
+pub mod punctuation;
 pub mod register;
 pub mod symbol;
-pub mod constant;
-pub mod punctuation;
 
 use crate::tokens::{
+    constant::{Constant, ConstantVariant},
     instruction::Instruction,
     pseudoinstruction::Pseudoinstruction,
+    punctuation::Punctuation,
     register::Register,
     symbol::Symbol,
-    constant::{Constant, ConstantVariant},
-    punctuation::Punctuation,
 };
 
 /// All possible token types in assembly
@@ -83,7 +85,7 @@ impl AssemblyToken {
             Self::Punctuation(_) => "punctuation",
         }
     }
-    
+
     /// Convert to parse::Token for chumsky
     pub fn to_parse_token(&self) -> crate::parse::Token {
         use crate::parse::Token;

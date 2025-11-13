@@ -59,7 +59,7 @@ impl Iterator for AssemblyLexer {
         // Try to build the longest possible token
         while current_pos < self.chars.len() {
             accum.push(self.chars[current_pos]);
-            
+
             if let Some(token) = Self::try_tokenize(&accum) {
                 // This is a valid token, remember it
                 longest_token = Some(token);
@@ -68,7 +68,7 @@ impl Iterator for AssemblyLexer {
                 // Current accumulation is not valid, stop here
                 break;
             }
-            
+
             current_pos += 1;
         }
 
@@ -99,7 +99,7 @@ impl AssemblyLexer {
         }
 
         let mut accum = String::new();
-        
+
         // Add the opening quote
         accum.push(self.chars[self.pos]);
         self.pos += 1;
