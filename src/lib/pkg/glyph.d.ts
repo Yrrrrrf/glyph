@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export function greet(name: string): void;
+export function analyze_assembly(source: string): any;
 
 export type InitInput =
   | RequestInfo
@@ -12,15 +13,14 @@ export type InitInput =
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly greet: (a: number, b: number) => void;
-  readonly __wbindgen_externrefs: WebAssembly.Table;
-  readonly __wbindgen_malloc: (a: number, b: number) => number;
-  readonly __wbindgen_realloc: (
+  readonly analyze_assembly: (a: number, b: number) => number;
+  readonly __wbindgen_export: (a: number, b: number) => number;
+  readonly __wbindgen_export2: (
     a: number,
     b: number,
     c: number,
     d: number,
   ) => number;
-  readonly __wbindgen_start: () => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

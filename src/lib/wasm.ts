@@ -1,10 +1,10 @@
 // src/lib/wasm.ts
 
 // Import the default init function and all named exports from the wasm-pack generated code.
-import init, { greet } from "./pkg/glyph.js";
+import init, { analyze_assembly, greet } from "./pkg/glyph.js";
 
 // --- Direct WASM Function Exports ---
-export { greet };
+export { analyze_assembly, greet };
 
 // --- WASM Initialization Singleton ---
 let wasmReadyPromise: Promise<void> | null = null;
