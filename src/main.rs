@@ -48,16 +48,17 @@ fn convert_tokens<'a>(lex_tokens: &'a [lex::Token<'a>]) -> Vec<parse::Token<'a>>
     lex_tokens
         .iter()
         .map(|token| match token {
-            lex::Token::Mnemonic(s) => parse::Token::Mnemonic(s),
-            lex::Token::Register(s) => parse::Token::Register(s),
-            lex::Token::Integer(s) => parse::Token::Immediate(s),
-            lex::Token::Identifier(s) => parse::Token::Label(s),
-            lex::Token::LabelDeclaration(s) => parse::Token::Label(s),
-            lex::Token::Directive(s) => parse::Token::Directive(s),
-            lex::Token::String(s) => parse::Token::String(s),
-            lex::Token::Comma => parse::Token::Punctuation(','),
-            // The `Error` token is ignored for this test.
-            lex::Token::Error => todo!(), // Or handle it gracefully
+            _ => todo!("Implementalo we nmms"),
+            // lex::Token::Mnemonic(s) => parse::Token::Mnemonic(s),
+            // lex::Token::Register(s) => parse::Token::Register(s),
+            // lex::Token::Integer(s) => parse::Token::Immediate(s),
+            // lex::Token::Identifier(s) => parse::Token::Label(s),
+            // lex::Token::LabelDeclaration(s) => parse::Token::Label(s),
+            // lex::Token::Directive(s) => parse::Token::Directive(s),
+            // lex::Token::String(s) => parse::Token::String(s),
+            // lex::Token::Comma => parse::Token::Punctuation(','),
+            // // The `Error` token is ignored for this test.
+            // lex::Token::Error => todo!(), // Or handle it gracefully
         })
         .collect()
 }
