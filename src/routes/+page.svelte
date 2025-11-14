@@ -1,91 +1,110 @@
 <script lang="ts">
-	import Header from '$lib/components/Header.svelte';
-	import CodeEditor from '$lib/components/CodeEditor.svelte';
-	import AnalysisPanel from '$lib/components/AnalysisPanel.svelte';
+  import Header from '$lib/components/Header.svelte';
+  import CodeEditor from '$lib/components/CodeEditor.svelte';
+  import AnalysisPanel from '$lib/components/AnalysisPanel.svelte';
+  import FileInput from '$lib/components/FileInput.svelte';
+  import { analyze_assembly } from '$lib/wasm';
 
-	// Sample initial data for demonstration
-	const initialSampleCode = `; Sample assembly code
-section .data
-    msg db 'Hello, World!', 0
+  let sourceCode = $state('');
+  let analysisTokens = $state<any[]>([]);
+  let highlightedInfo = $state<{ line: number; element: string } | null>(null);
+  let currentFile = $state<string | null>(null);
+  let activeTab = $state<'load' | 'lexer' | 'parser'>('load');
 
-section .text
-    global _start
+  function handleTokenHover(info: { line: number; element: string } | null) {
+    highlightedInfo = info;
+  }
 
-_start:
-    ; write system call
-    mov rax, 1      ; sys_write
-    mov rdi, 1      ; stdout
-    mov rsi, msg    ; message to write
-    mov rdx, 13     ; number of bytes
-    syscall
+  function handleFileLoaded(content: string, filename: string) {
+    sourceCode = content;
+    currentFile = filename;
+    activeTab = 'lexer';
+    runAnalysis();
+  }
 
-    ; exit system call
-    mov rax, 60     ; sys_exit
-    mov rdi, 0      ; exit status
-    syscall`;
+  async function runAnalysis() {
+    try {
+      const tokens = analyze_assembly(sourceCode);
+      analysisTokens = tokens;
+    } catch (err) {
+      console.error('Analysis failed:', err);
+      alert(`Analysis failed: ${err}`);
+    }
+  }
 
-	// Mock tokens data for demonstration
-	const mockTokens = [
-		{ line: 1, element: 'section', type: 'directive' },
-		{ line: 1, element: '.data', type: 'section' },
-		{ line: 2, element: 'msg', type: 'label' },
-		{ line: 2, element: 'db', type: 'directive' },
-		{ line: 4, element: 'section', type: 'directive' },
-		{ line: 4, element: '.text', type: 'section' },
-		{ line: 5, element: 'global', type: 'directive' },
-		{ line: 5, element: '_start', type: 'label' },
-		{ line: 7, element: '_start:', type: 'label' },
-		{ line: 9, element: 'mov', type: 'instruction' },
-		{ line: 10, element: 'mov', type: 'instruction' },
-		{ line: 11, element: 'mov', type: 'instruction' },
-		{ line: 12, element: 'mov', type: 'instruction' },
-		{ line: 13, element: 'syscall', type: 'instruction' },
-		{ line: 15, element: 'mov', type: 'instruction' },
-		{ line: 16, element: 'mov', type: 'instruction' },
-		{ line: 17, element: 'syscall', type: 'instruction' },
-	];
-
-	// Holds the raw text from the .asm file.
-	let sourceCode = $state(initialSampleCode);
-
-	// Holds the array of tokens from the lexer.
-	let analysisTokens = $state(mockTokens);
-
-	// The 'bridge' between panels. Holds info on the hovered token.
-	// It's null when nothing is hovered.
-	let highlightedInfo = $state<{ line: number; element: string } | null>(null);
-
-	// This function IS the callback. It directly modifies the state.
-	function handleTokenHover(info: { line: number; element: string } | null) {
-		highlightedInfo = info;
-	}
-
-	// This function will be passed to the Header.
-	async function runAnalysis() {
-		// Future integration point for Rust/WASM
-		// const tokens = await wasm.analyze(sourceCode);
-		// analysisTokens = tokens;
-		console.log("Analysis triggered!");
-	}
+  function handleTabChange(tab: 'load' | 'lexer' | 'parser') {
+    activeTab = tab;
+  }
 </script>
+
 
 <div class="flex flex-col h-screen">
 	<Header onAnalyze={runAnalysis} />
-	<main class="flex flex-1 overflow-hidden p-4 gap-4">
-		<div class="flex-1">
-			<h2 class="text-lg font-semibold mb-2">Code Editor</h2>
-			<CodeEditor
-				code={sourceCode}
-				highlight={highlightedInfo}
-			/>
-		</div>
-		<div class="flex-1">
-			<h2 class="text-lg font-semibold mb-2">Analysis Panel</h2>
-				<AnalysisPanel
-				tokens={analysisTokens}
-				onTokenHover={handleTokenHover}
-				highlightedInfo={highlightedInfo}
-				/>
-		</div>
-	</main>
+	<li>{currentFile}</li>
+  
+  <main class="flex-1 overflow-hidden p-4">
+      <!-- Tabs -->
+      <div class="tabs tabs-lift">
+        <label class="tab">
+          <input 
+            type="radio" 
+            name="main_tabs" 
+            checked={activeTab === 'load'}
+            onchange={() => handleTabChange('load')}
+          />
+          📁 Load
+        </label>
+        <label class="tab">
+          <input 
+            type="radio" 
+            name="main_tabs" 
+            checked={activeTab === 'lexer'}
+            onchange={() => handleTabChange('lexer')}
+          />
+          🔍 Lexer
+        </label>
+        <label class="tab">
+          <input 
+            type="radio" 
+            name="main_tabs" 
+            checked={activeTab === 'parser'}
+            onchange={() => handleTabChange('parser')}
+          />
+          🌳 Parser
+        </label>
+      </div>
+      
+      <!-- Tab Content -->
+      <div class="flex-1 overflow-hidden bg-base-100 border border-base-300 rounded-b-lg rounded-tr-lg">
+        {#if activeTab === 'load'}
+          <div class="p-8">
+            <FileInput onFileLoaded={handleFileLoaded} />
+          </div>
+        {:else if activeTab === 'lexer' && sourceCode}
+          <div class="flex h-full gap-4 p-4">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold mb-2">Code Editor</h3>
+              <CodeEditor code={sourceCode} highlight={highlightedInfo} />
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold mb-2">Token Analysis</h3>
+              <AnalysisPanel
+                tokens={analysisTokens}
+                onTokenHover={handleTokenHover}
+                highlightedInfo={highlightedInfo}
+              />
+            </div>
+          </div>
+        {:else if activeTab === 'parser'}
+          <div class="p-8 text-center flex flex-col items-center justify-center h-full">
+            <div class="text-6xl mb-4">🚧</div>
+            <h3 class="text-xl font-semibold mb-2">Parser Under Construction</h3>
+            <p class="text-base-content/70 max-w-md">
+              Abstract Syntax Tree generation and semantic analysis will appear here once implemented.
+            </p>
+          </div>
+        {/if}
+      </div>
+    <!-- {/if} -->
+  </main>
 </div>

@@ -40,39 +40,6 @@
         { name: "nord", icon: "❄️", description: "Arctic color palette" },
         { name: "sunset", icon: "🌅", description: "Warm sunset colors" },
     ];
-
-    let currentTheme = $state(getCurrentTheme());
-    
-    // Get the current theme from HTML data-theme attribute
-    function getCurrentTheme(): string {
-        if (typeof document !== 'undefined') {
-            return document.documentElement.getAttribute('data-theme') || 'night';
-        }
-        return 'night';
-    }
-
-    // Create a map of theme name to config for quick lookup
-    const themeMap = new Map(STATIC_THEMES.map(theme => [theme.name, theme]));
-
-    // Get current theme config
-    $effect(() => {
-        // Update the current icon when theme changes
-        if (typeof document !== 'undefined') {
-            document.documentElement.setAttribute('data-theme', currentTheme);
-        }
-    });
-
-    // Computed property for current theme config
-    let themeConfig = $derived(themeMap.get(currentTheme) || { 
-        name: currentTheme, 
-        icon: "🎨",
-        description: "Custom theme" 
-    });
-
-    // Handler to change theme
-    function changeTheme(themeName: string) {
-        currentTheme = themeName;
-    }
 </script>
 
 <div class="dropdown dropdown-bottom">
@@ -82,28 +49,18 @@
         class="btn btn-ghost btn-circle"
         aria-label="Select theme"
     >
-        <span class="flex items-center justify-center">
-            <span class="text-lg">{themeConfig.icon}</span>
-        </span>
     </div>
 
     <div class="dropdown-content z-30 menu p-3 bg-base-200 border border-base-300 rounded-box shadow-xl mt-2 w-64 max-h-96 overflow-y-auto">
         <ul class="menu bg-base-100 rounded-box w-full">
             {#each STATIC_THEMES as theme}
-                <li>
-                    <button 
-                        class="flex items-center gap-2 hover:bg-base-200 active:bg-base-300 transition-colors duration-200" 
-                        onclick={() => changeTheme(theme.name)}
-                    >
-                        <div class="w-5 flex justify-center">
-                            {#if currentTheme === theme.name}
-                                <div class="text-sm text-primary">✓</div>
-                            {/if}
-                        </div>
-                        <span class="text-xl">{theme.icon}</span>
-                        <span class="capitalize">{theme.name}</span>
-                    </button>
-                </li>
+                <input
+                    type="radio"
+                    name="{theme}-button"
+                    class="btn theme-controller join-item"
+                    value={theme.name} 
+                    aria-label={`${theme.icon} ${theme.name}`}
+                    />
             {/each}
         </ul>
     </div>
