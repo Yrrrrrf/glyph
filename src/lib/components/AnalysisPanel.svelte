@@ -1,15 +1,19 @@
+<!-- src/lib/components/AnalysisPanel.svelte -->
 <script lang="ts">
-  type Token = { line: number; element: string; type: string };
-  type HighlightInfo = { line: number; element: string } | null;
+  import type { WasmToken } from '$lib/stores/glyphStore.svelte';
+  import type { HighlightInfo } from '$lib/stores/glyphStore.svelte';
 
-  let { tokens, onTokenHover, highlightedInfo } = $props<{
-    tokens: Token[];
-    onTokenHover: (info: HighlightInfo) => void;
-    highlightedInfo: HighlightInfo;
+  let { 
+    tokens, 
+    onTokenHover, 
+    highlightedInfo 
+  } = $props<{
+    tokens: WasmToken[];
+    onTokenHover: (info: HighlightInfo | null) => void;
+    highlightedInfo: HighlightInfo | null;
   }>();
 
-  // Check if this token is the currently highlighted one
-  function isTokenHighlighted(token: Token): boolean {
+  function isTokenHighlighted(token: WasmToken): boolean {
     return highlightedInfo !== null && 
            token.line === highlightedInfo.line && 
            token.element === highlightedInfo.element;
@@ -26,20 +30,21 @@
       </tr>
     </thead>
     <tbody>
-{#each tokens as token, idx (idx)} <!-- Use index for stable keys -->
-  <tr
-    onmouseenter={() => onTokenHover({ line: token.line, element: token.element })}
-    onmouseleave={() => onTokenHover(null)}
-    class="hover:bg-base-200 transition-colors duration-150 cursor-pointer"
-    class:bg-base-300={highlightedInfo !== null && 
-                       token.line === highlightedInfo.line && 
-                       token.element === highlightedInfo.element}
-  >
-    <td class="font-mono text-sm">{token.line}</td>
-    <td class="font-mono text-sm">{token.element}</td>
-    <td class="text-sm capitalize">{token.type}</td>
-  </tr>
-{/each}
+      {#each tokens as token, idx (idx)}
+        <tr
+          onmouseenter={() => onTokenHover({ 
+            line: token.line ?? 1, 
+            element: token.element 
+          })}
+          onmouseleave={() => onTokenHover(null)}
+          class="hover:bg-base-200 transition-colors duration-150 cursor-pointer"
+          class:bg-base-300={isTokenHighlighted(token)}
+        >
+          <td class="font-mono text-sm">{token.line ?? 1}</td>
+          <td class="font-mono text-sm">{token.element}</td>
+          <td class="text-sm capitalize">{token.token_type}</td>
+        </tr>
+      {/each}
     </tbody>
   </table>
 </div>

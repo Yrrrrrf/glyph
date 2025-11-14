@@ -13,8 +13,12 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
-    // fn log(s: &str);
+    fn log(s: &str);
     fn alert(s: &str);
+
+    // fn console_error(s: &str);
+    // fn console_warn(s: &str);
+
 }
 
 #[wasm_bindgen]

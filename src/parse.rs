@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use chumsky::prelude::*;
 use std::str::FromStr;
 

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! CPU Instructions with subcategories
 use super::*;
 use serde::Serialize;

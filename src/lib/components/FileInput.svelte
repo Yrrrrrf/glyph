@@ -1,47 +1,54 @@
+<!-- src/lib/components/FileInput.svelte -->
 <script lang="ts">
   let { onFileLoaded } = $props<{
-    onFileLoaded: (content: string, filename: string) => void;
+    onFileLoaded: (content: string, filename: string) => Promise<void>;
   }>();
 
   let error = $state<string | null>(null);
 
-  function handleFileInput(event: Event) {
+  async function handleFileInput(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    
-    error = null;
-    
     if (!file) return;
 
+    error = null;
+    console.log('📄 FileInput selected:', file.name);
+
+    // Validate
     if (!file.name.toLowerCase().endsWith('.asm')) {
-      error = `❌ Invalid file: "${file.name}" is not a .asm file`;
-      input.value = '';
+      error = `Invalid file: "${file.name}" is not a .asm file`;
+      console.error('❌ FileInput validation failed:', error);
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const content = e.target?.result as string;
-      onFileLoaded(content, file.name);
+      console.log('📖 File read complete, length:', content.length);
+      try {
+        await onFileLoaded(content, file.name);
+        console.log('✅ FileInput: onFileLoaded succeeded');
+        input.value = ''; // Reset for re-upload
+      } catch (err) {
+        error = err instanceof Error ? err.message : 'Failed';
+        console.error('❌ FileInput: onFileLoaded failed:', error);
+      }
     };
+    
     reader.readAsText(file);
   }
 </script>
 
-<div class="form-control w-full max-w-md">
+<div class="form-control w-full max-w-xs">
     <span class="label-text font-semibold">Select Assembly File</span>
+  
   <input 
     type="file" 
-    class="file-input file-input-primary file-input-sm w-full" 
+    class="file-input file-input-primary file-input-xs w-full" 
     onchange={handleFileInput}
-    />
-    <!-- accept=".asm" -->
+  />
   
   {#if error}
       <span class="label-text-alt text-error">{error}</span>
-  {:else}
-      <span class="label-text-alt text-base-content/60">
-        Choose a *.asm script to analyze
-      </span>
   {/if}
 </div>

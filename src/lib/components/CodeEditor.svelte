@@ -6,6 +6,10 @@
     highlight: HighlightInfo;
   }>();
 
+  export interface CodeEditorProps {
+    code: string;
+    highlight: HighlightInfo | null;
+  }
   let lines = $derived(code.split('\n'));
 
   // Split line into parts, highlighting matches
