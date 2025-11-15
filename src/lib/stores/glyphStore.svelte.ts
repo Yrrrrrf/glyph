@@ -28,7 +28,7 @@ class GlyphStore {
 
   get HAS_FILE(): boolean {
     const result = this.currentFile !== null && this.sourceCode.length > 0;
-    console.log("🔍 HAS_FILE:", result, "| file:", this.currentFile);
+    console.log("File ->:", result, "| file:", this.currentFile);
     return result;
   }
 
@@ -42,9 +42,9 @@ class GlyphStore {
 
   // Arrow function = `this` is permanently bound
   runAnalysis = async (): Promise<void> => {
-    console.log("⚙️ runAnalysis called");
+    console.log("runAnalysis called");
     if (!this.HAS_FILE) {
-      console.warn("⚠️ No file to analyze");
+      console.warn("No file to analyze");
       return;
     }
 
@@ -53,41 +53,41 @@ class GlyphStore {
 
     try {
       const tokens = analyze_assembly(this.sourceCode);
-      console.log("✅ Analysis done, tokens:", tokens.length);
+      console.log("Analysis done, tokens:", tokens.length);
       this.analysisResult = tokens;
       this.analysisState = "lexer_ready";
     } catch (error) {
       this.analysisState = "error";
       this.error = error instanceof Error ? error.message : "Analysis failed";
-      console.error("❌ Analysis error:", this.error);
+      console.error("Analysis error:", this.error);
     }
   };
 
   // Arrow function = `this` is permanently bound
   loadFile = async (content: string, filename: string): Promise<void> => {
-    console.log("📂 loadFile called:", filename);
+    console.log("loadFile called:", filename);
     this.error = null;
 
     // Validate
     if (!filename.toLowerCase().endsWith(".asm")) {
       this.error = `Invalid file: "${filename}" is not a .asm file`;
-      console.error("❌ Validation failed:", this.error);
+      console.error("Validation failed:", this.error);
       return;
     }
 
     // Set data
     this.sourceCode = content;
     this.currentFile = filename;
-    console.log("✅ File set, switching tab and analyzing...");
+    console.log("File set, switching tab and analyzing...");
 
     // Switch tab and run analysis
     this.activeTab = "lexer";
     await this.runAnalysis(); // `this` is guaranteed to work
-    console.log("✅ loadFile complete");
+    console.log("loadFile complete");
   };
 
   setActiveTab = (tab: TabState): void => {
-    console.log("🖱️ Tab changed to:", tab);
+    console.log("Tab changed to:", tab);
     this.activeTab = tab;
   };
 
@@ -96,7 +96,7 @@ class GlyphStore {
   };
 
   clearFile = (): void => {
-    console.log("🗑️ Clearing file...");
+    console.log("Clearing file...");
     this.sourceCode = "";
     this.currentFile = null;
     this.error = null;
