@@ -46,7 +46,7 @@ pub fn analyze_assembly(source: &str) -> JsValue {
                 AssemblyToken::Invalid(s) => {
                     println!("Invalid token encountered: {}", s);
                     s.clone()
-                },  // Invalid token handling
+                } // Invalid token handling
             },
             token_type: token.category().to_string(),
         })

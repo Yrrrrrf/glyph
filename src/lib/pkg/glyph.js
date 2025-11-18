@@ -196,7 +196,7 @@ function __wbg_get_imports() {
     throw new Error(getStringFromWasm0(arg0, arg1));
   };
   imports.wbg.__wbg_alert_c0619d649cde1442 = function (arg0, arg1) {
-    console.alert(getStringFromWasm0(arg0, arg1));
+    alert(getStringFromWasm0(arg0, arg1));
   };
   imports.wbg.__wbg_new_1acc0b6eea89d040 = function () {
     const ret = new Object();

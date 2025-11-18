@@ -46,7 +46,7 @@ impl Iterator for AssemblyLexer {
         }
 
         // Special handling for quoted strings
-        if self.chars[self.pos] == '"' {
+        if self.chars[self.pos] == '"' || self.chars[self.pos] == '\'' {
             return self.parse_quoted_string();
         }
 
@@ -97,12 +97,13 @@ impl AssemblyLexer {
     // src/lex.rs
 
     // In the parse_quoted_string method, replace it with this:
+    // src/lex.rs - Replace parse_quoted_string method:
+
     fn parse_quoted_string(&mut self) -> Option<AssemblyToken> {
         if self.pos >= self.chars.len() {
             return None;
         }
 
-        // Handle BOTH single and double quotes
         let quote_char = self.chars[self.pos];
         if quote_char != '"' && quote_char != '\'' {
             return None;
@@ -112,24 +113,21 @@ impl AssemblyLexer {
         accum.push(quote_char);
         self.pos += 1;
 
+        // Accumulate until closing quote or end of input
         while self.pos < self.chars.len() {
             let ch = self.chars[self.pos];
             accum.push(ch);
             self.pos += 1;
 
-            // Found closing quote
             if ch == quote_char {
-                if let Some(token) = Self::try_tokenize(&accum) {
-                    return Some(token);
-                }
+                // Found closing quote - try to tokenize
+                return Self::try_tokenize(&accum);
             }
         }
 
-        // Unclosed string - return what we have as invalid
+        // Unclosed string - return as invalid (but still a single token!)
         Some(AssemblyToken::Invalid(accum))
     }
-
-    // In the next() method, replace the final else block:
 }
 
 impl AssemblyLexer {
