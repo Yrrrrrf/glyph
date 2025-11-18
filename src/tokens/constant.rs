@@ -11,12 +11,18 @@ pub enum Constant {
 }
 
 impl Token for Constant {
+    // src/tokens/constant.rs
+
+    // Update the from_str method to handle both quote types
     fn from_str(s: &str) -> Option<Self> {
-        // String: "hello"
-        if s.starts_with('"') && s.ends_with('"') && s.len() > 1 {
+        // String: "hello" OR 'hello'
+        if (s.starts_with('"') && s.ends_with('"') && s.len() > 1)
+            || (s.starts_with('\'') && s.ends_with('\'') && s.len() > 1)
+        {
             return Some(Constant::String(s[1..s.len() - 1].to_string()));
         }
 
+        // Rest of your existing logic...
         // Hex: FFh or 0FFh
         if let Some(hex_part) = s.strip_suffix('h').or_else(|| s.strip_suffix('H')) {
             if !hex_part.is_empty() {

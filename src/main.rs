@@ -1,37 +1,50 @@
-// #![allow(dead_code)]
-// #![allow(unused)]
-
+// src/main.rs
 mod lex;
 mod parse;
 mod tokens;
 
 use chumsky::Parser;
+use std::env;
+use std::fs;
+use tokens::AssemblyToken;
 
-fn main() {
-    let code = r#"
-    ; Sample assembly
-    section .data
-        msg db "Hello", 0
-    .code
-    start:
-        MOV AX, 10h
-        ADD AX, 1
-        INT 21h
-    "#;
+fn get_filename() -> String {
+    let args: Vec<String> = env::args().collect();
+    args.get(1)
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "test.asm".to_string())
+}
 
-    println!("=== NEW LEXER OUTPUT ===");
-    let tokens: Vec<_> = lex::lexer(code).collect();
+fn read_file(filename: &str) -> String {
+    fs::read_to_string(filename).unwrap_or_else(|e| {
+        eprintln!("Error reading '{}': {}", filename, e);
+        std::process::exit(1);
+    })
+}
 
-    for token in &tokens {
+fn print_lexer_output(tokens: &[AssemblyToken]) {
+    println!("=== LEXER OUTPUT ===");
+    for token in tokens {
         println!("{:>12} | {:?}", token.category(), token);
     }
+}
 
-    println!("\n=== CONVERTED FOR PARSER ===");
+fn print_parser_output(tokens: &[AssemblyToken]) {
+    println!("\n=== PARSER OUTPUT ===");
     let parse_tokens: Vec<parse::Token> = tokens.iter().map(|t| t.to_parse_token()).collect();
 
-    // println!("{:#?}", parse_tokens);
-
-    // Parse as before
     let result = parse::instruction_parser().parse(&parse_tokens);
-    println!("\n=== PARSE RESULT ===\n{:#?}", result);
+    println!("{:#?}", result);
+}
+
+fn main() {
+    let filename = get_filename();
+    let code = read_file(&filename);
+
+    println!("=== Processing: {} ===\n", filename);
+
+    let tokens: Vec<_> = lex::lexer(&code).collect();
+
+    print_lexer_output(&tokens);
+    print_parser_output(&tokens);
 }

@@ -43,6 +43,10 @@ pub fn analyze_assembly(source: &str) -> JsValue {
                 AssemblyToken::Symbol(s) => s.to_string(),
                 AssemblyToken::Constant(c) => c.to_string(),
                 AssemblyToken::Punctuation(p) => p.to_string(),
+                AssemblyToken::Invalid(s) => {
+                    println!("Invalid token encountered: {}", s);
+                    s.clone()
+                },  // Invalid token handling
             },
             token_type: token.category().to_string(),
         })

@@ -84,8 +84,9 @@ impl Iterator for AssemblyLexer {
                 return Some(token);
             } else {
                 // Skip this character if it's not a valid token
+                let invalid_char = self.chars[self.pos].to_string();
                 self.pos += 1;
-                return None;
+                return Some(AssemblyToken::Invalid(invalid_char));
             }
         }
     }
@@ -93,37 +94,42 @@ impl Iterator for AssemblyLexer {
 
 impl AssemblyLexer {
     /// Parse a quoted string token
+    // src/lex.rs
+
+    // In the parse_quoted_string method, replace it with this:
     fn parse_quoted_string(&mut self) -> Option<AssemblyToken> {
-        if self.pos >= self.chars.len() || self.chars[self.pos] != '"' {
+        if self.pos >= self.chars.len() {
+            return None;
+        }
+
+        // Handle BOTH single and double quotes
+        let quote_char = self.chars[self.pos];
+        if quote_char != '"' && quote_char != '\'' {
             return None;
         }
 
         let mut accum = String::new();
-
-        // Add the opening quote
-        accum.push(self.chars[self.pos]);
+        accum.push(quote_char);
         self.pos += 1;
 
-        // Continue until we find the closing quote or reach end of input
         while self.pos < self.chars.len() {
             let ch = self.chars[self.pos];
             accum.push(ch);
             self.pos += 1;
 
-            // If this is a closing quote, we're done
-            if ch == '"' {
-                // If we have a valid string token, return it
+            // Found closing quote
+            if ch == quote_char {
                 if let Some(token) = Self::try_tokenize(&accum) {
                     return Some(token);
                 }
             }
         }
 
-        // If we reached end of input without finding closing quote,
-        // we'll return what we have but this should not happen in a valid program
-        // For now, let's just return None to skip the incomplete string
-        None
+        // Unclosed string - return what we have as invalid
+        Some(AssemblyToken::Invalid(accum))
     }
+
+    // In the next() method, replace the final else block:
 }
 
 impl AssemblyLexer {

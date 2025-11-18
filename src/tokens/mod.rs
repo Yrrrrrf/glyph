@@ -66,6 +66,7 @@ pub enum AssemblyToken {
     Symbol(Symbol),
     Constant(Constant),
     Punctuation(Punctuation),
+    Invalid(String), // NEW: For unrecognizable tokens
 }
 
 impl AssemblyToken {
@@ -83,6 +84,7 @@ impl AssemblyToken {
                 ConstantVariant::String => "string",
             },
             Self::Punctuation(_) => "punctuation",
+            Self::Invalid(_) => "invalid",
         }
     }
 
@@ -99,6 +101,7 @@ impl AssemblyToken {
                 let s = p.to_string();
                 Token::Punctuation(s.chars().next().unwrap())
             }
+            Self::Invalid(s) => Token::Label(format!("__INVALID_{}", s)),
         }
     }
 }
