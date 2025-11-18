@@ -1,9 +1,11 @@
+// src/lex.rs
 //! Assembly lexer using logic_tracer's algorithm
 use crate::tokens::{AssemblyToken, Token};
 
 pub struct AssemblyLexer {
     chars: Vec<char>,
     pos: usize,
+    line: usize,
 }
 
 impl AssemblyLexer {
@@ -24,17 +26,21 @@ impl AssemblyLexer {
         Self {
             chars: clean.chars().collect(),
             pos: 0,
+            line: 1,
         }
     }
 }
 
 impl Iterator for AssemblyLexer {
-    type Item = AssemblyToken;
+    type Item = (AssemblyToken, usize); // Token with line number
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Skip whitespace
+        // Skip whitespace and track newlines
         while self.pos < self.chars.len() {
-            if self.chars[self.pos].is_whitespace() {
+            if self.chars[self.pos] == '\n' {
+                self.line += 1;
+                self.pos += 1;
+            } else if self.chars[self.pos].is_whitespace() {
                 self.pos += 1;
             } else {
                 break;
@@ -45,9 +51,11 @@ impl Iterator for AssemblyLexer {
             return None;
         }
 
+        let current_line = self.line; // Capture line before consuming chars
+
         // Special handling for quoted strings
         if self.chars[self.pos] == '"' || self.chars[self.pos] == '\'' {
-            return self.parse_quoted_string();
+            return self.parse_quoted_string(current_line);
         }
 
         // Find the longest valid token starting from the current position
@@ -75,40 +83,28 @@ impl Iterator for AssemblyLexer {
         // If we found a valid token, advance position and return it
         if let Some(token) = longest_token {
             self.pos += longest_len;
-            return Some(token);
+            return Some((token, current_line)); // Return tuple
         } else {
             // If no valid token found at all, try single character tokens
             let single_char = self.chars[self.pos].to_string();
             if let Some(token) = Self::try_tokenize(&single_char) {
                 self.pos += 1;
-                return Some(token);
+                return Some((token, current_line)); // Return tuple
             } else {
                 // Skip this character if it's not a valid token
                 let invalid_char = self.chars[self.pos].to_string();
                 self.pos += 1;
-                return Some(AssemblyToken::Invalid(invalid_char));
+                return Some((AssemblyToken::Invalid(invalid_char), current_line)); // Return tuple
             }
         }
     }
 }
 
 impl AssemblyLexer {
-    /// Parse a quoted string token
-    // src/lex.rs
-
-    // In the parse_quoted_string method, replace it with this:
-    // src/lex.rs - Replace parse_quoted_string method:
-
-    fn parse_quoted_string(&mut self) -> Option<AssemblyToken> {
-        if self.pos >= self.chars.len() {
-            return None;
-        }
-
+    /// Parse a quoted string token - FIXED to return (token, line)
+    fn parse_quoted_string(&mut self, current_line: usize) -> Option<(AssemblyToken, usize)> {
+        // Removed self.pos check - already validated by caller
         let quote_char = self.chars[self.pos];
-        if quote_char != '"' && quote_char != '\'' {
-            return None;
-        }
-
         let mut accum = String::new();
         accum.push(quote_char);
         self.pos += 1;
@@ -121,16 +117,16 @@ impl AssemblyLexer {
 
             if ch == quote_char {
                 // Found closing quote - try to tokenize
-                return Self::try_tokenize(&accum);
+                if let Some(token) = Self::try_tokenize(&accum) {
+                    return Some((token, current_line));
+                }
             }
         }
 
-        // Unclosed string - return as invalid (but still a single token!)
-        Some(AssemblyToken::Invalid(accum))
+        // Unclosed string - return as invalid
+        Some((AssemblyToken::Invalid(accum), current_line))
     }
-}
 
-impl AssemblyLexer {
     /// Try to tokenize a string - order matters for disambiguation!
     fn try_tokenize(s: &str) -> Option<AssemblyToken> {
         // 1. Constants first (FFh should be constant, not symbol)

@@ -196,7 +196,7 @@ function __wbg_get_imports() {
     throw new Error(getStringFromWasm0(arg0, arg1));
   };
   imports.wbg.__wbg_alert_c0619d649cde1442 = function (arg0, arg1) {
-    alert(getStringFromWasm0(arg0, arg1));
+    console.alert(getStringFromWasm0(arg0, arg1));
   };
   imports.wbg.__wbg_new_1acc0b6eea89d040 = function () {
     const ret = new Object();
@@ -215,6 +215,11 @@ function __wbg_get_imports() {
   imports.wbg.__wbindgen_cast_2241b6af4c4b2941 = function (arg0, arg1) {
     // Cast intrinsic for `Ref(String) -> Externref`.
     const ret = getStringFromWasm0(arg0, arg1);
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbindgen_cast_d6cd19b81560fd6e = function (arg0) {
+    // Cast intrinsic for `F64 -> Externref`.
+    const ret = arg0;
     return addHeapObject(ret);
   };
   imports.wbg.__wbindgen_object_clone_ref = function (arg0) {

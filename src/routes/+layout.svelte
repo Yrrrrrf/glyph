@@ -2,7 +2,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { init } from '$lib/index';
-  import ErrorBanner from '$lib/components/ErrorBanner.svelte';
   import '../app.css';
   
   let { children } = $props();
@@ -18,6 +17,5 @@
 </svelte:head>
 
 <div class="app-container">
-  <ErrorBanner />
   {@render children()}
 </div>

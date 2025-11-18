@@ -104,4 +104,39 @@ impl AssemblyToken {
             Self::Invalid(s) => Token::Label(format!("__INVALID_{}", s)),
         }
     }
+
+    pub fn detailed_type(&self) -> String {
+        match self {
+            Self::Instruction(i) => format!("instruction-{}", i.to_string().to_lowercase()),
+            Self::Pseudoinstruction(p) => format!("directive-{}", p.to_string().to_lowercase()),
+            Self::Register(r) => format!("register-{}", r.to_string().to_lowercase()),
+            Self::Symbol(_) => "symbol".to_string(),
+            Self::Constant(c) => {
+                let variant = match c.variant() {
+                    ConstantVariant::Decimal => "decimal",
+                    ConstantVariant::Hexadecimal => "hexadecimal",
+                    ConstantVariant::Binary => "binary",
+                    ConstantVariant::String => "string",
+                };
+                format!("constant-{}", variant)
+            }
+            Self::Punctuation(p) => format!("punctuation-{}", p.to_string()),
+            Self::Invalid(_) => "invalid".to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for AssemblyToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AssemblyToken::Instruction(i) => i.to_string(),
+            AssemblyToken::Pseudoinstruction(p) => p.to_string(),
+            AssemblyToken::Register(r) => r.to_string(),
+            AssemblyToken::Symbol(s) => s.to_string(),
+            AssemblyToken::Constant(c) => c.to_string(),
+            AssemblyToken::Punctuation(p) => p.to_string(),
+            AssemblyToken::Invalid(s) => s.clone(),
+        };
+        write!(f, "{}", s)
+    }
 }

@@ -1,19 +1,126 @@
-import { analyze_assembly, initWasm } from "./wasm";
+// src/lib/test.ts
+import { analyze_assembly, initWasm } from "./wasm.ts";
 
-const TEST_CODE = `MOV AX, 10h
-ADD AX, 1`;
-
-async function runTest() {
-  await initWasm(); // Wait for WASM
-  console.log("=== NEW LEXER OUTPUT (TS/WASM) ===");
-
-  const tokens: any[] = analyze_assembly(TEST_CODE);
-
-  tokens.forEach((t) => {
-    console.log(`${t.token_type.padEnd(12)} | ${t.element}`);
-  });
-
-  console.log("\nTotal tokens:", tokens.length);
+interface WasmToken {
+  element: string;
+  category: string;
+  detail: string;
+  line: number;
 }
 
-runTest();
+// --- EXACT RUST MIRROR ---
+
+function getFilename(): string {
+  if (Deno.args.length === 0) {
+    console.log("ℹ️  No filename provided, using built-in test code\n");
+    return "test.asm";
+  }
+  return Deno.args[0];
+}
+
+function readFile(filename: string): string {
+  try {
+    const content = Deno.readTextFileSync(filename);
+    console.log(`📄 Loaded ${content.length} characters from ${filename}\n`);
+    return content;
+  } catch (error) {
+    console.error(`❌ Error reading '${filename}': ${error.message}`);
+    Deno.exit(1);
+  }
+}
+
+function printLexerOutput(tokens: WasmToken[]): void {
+  console.log("=== LEXER OUTPUT ===");
+
+  if (tokens.length === 0) {
+    console.log("(No tokens found)\n");
+    return;
+  }
+
+  console.log(`Total tokens: ${tokens.length}\n`);
+
+  // Match Rust's format: "Line {:>3} | {:>12} | {:?}"
+  for (const token of tokens) {
+    console.log(
+      `Line ${String(token.line).padStart(3)} | ` +
+        `${token.category.padStart(12)} | ` +
+        `${token.element}`,
+    );
+  }
+}
+
+function printParserOutput(tokens: WasmToken[]): void {
+  console.log("\n=== PARSER OUTPUT ===");
+  console.log("(Parser not yet integrated in TypeScript)");
+  console.log("Run `cargo run -- <file>` for parser output");
+  console.log(`Total tokens available: ${tokens.length}`);
+}
+
+// --- ROBUST TOKEN PARSER WITH DEBUG ---
+
+function parseTokens(rawResult: any): WasmToken[] {
+  console.log("🔍 Debugging WASM result structure...");
+  console.log("   Type:", typeof rawResult);
+  console.log("   Is Array?", Array.isArray(rawResult));
+
+  if (!Array.isArray(rawResult)) {
+    throw new Error(`Expected array from WASM, got ${typeof rawResult}`);
+  }
+
+  console.log(`   Array length: ${rawResult.length}`);
+
+  if (rawResult.length > 0) {
+    // Inspect first element
+    const first = rawResult[0];
+    console.log("   First element:", first);
+    console.log("   First element type:", typeof first);
+    console.log(
+      "   First element keys:",
+      typeof first === "object" && first ? Object.keys(first) : "N/A",
+    );
+  }
+
+  return rawResult.map((item, index) => {
+    // Defensive parsing - handles null/undefined/empty objects
+    const element = item?.element !== undefined
+      ? String(item.element)
+      : `<?token_${index}?>`;
+    const category = item?.category !== undefined
+      ? String(item.category)
+      : "unknown";
+    const detail = item?.detail !== undefined ? String(item.detail) : "";
+    const line = item?.line !== undefined ? Number(item.line) : 0;
+
+    return { element, category, detail, line };
+  });
+}
+
+// --- MAIN ---
+
+async function main(): Promise<void> {
+  console.log("=== Glyph Test Runner ===\n");
+
+  await initWasm();
+  console.log("✅ WebAssembly module initialized\n");
+
+  const filename = getFilename();
+  const code = Deno.args.length > 0 ? readFile(filename) : `MOV AX, 10h
+ADD AX, 1`;
+
+  console.log(`=== Processing: ${filename} ===\n`);
+
+  const rawResult = analyze_assembly(code);
+  const tokens = parseTokens(rawResult);
+
+  printLexerOutput(tokens);
+  printParserOutput(tokens);
+
+  console.log("\n✅ Test complete!");
+}
+
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error("\n❌ Fatal error:", error.message);
+    Deno.exit(1);
+  });
+}

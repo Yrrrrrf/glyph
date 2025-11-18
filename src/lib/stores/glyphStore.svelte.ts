@@ -1,5 +1,6 @@
 // src/lib/stores/glyphStore.svelte.ts
 import { analyze_assembly } from "$lib/wasm";
+import type { WasmToken } from "$lib/types/tokenTypes.svelte";
 
 export type TabState = "load" | "lexer" | "parser";
 export type AnalysisState = "idle" | "loading" | "lexer_ready" | "error";
@@ -7,12 +8,6 @@ export type AnalysisState = "idle" | "loading" | "lexer_ready" | "error";
 export interface HighlightInfo {
   line: number;
   element: string;
-}
-
-export interface WasmToken {
-  element: string;
-  token_type: string;
-  line?: number;
 }
 
 // The Store - Arrow functions preserve `this` binding
@@ -40,28 +35,19 @@ class GlyphStore {
     return this.analysisResult?.length ?? 0;
   }
 
-  // Arrow function = `this` is permanently bound
-  runAnalysis = async (): Promise<void> => {
-    console.log("runAnalysis called");
-    if (!this.HAS_FILE) {
-      console.warn("No file to analyze");
-      return;
-    }
+  async runAnalysis(): Promise<void> {
+    if (!this.HAS_FILE) return;
 
     this.analysisState = "loading";
-    this.error = null;
-
     try {
-      const tokens = analyze_assembly(this.sourceCode);
-      console.log("Analysis done, tokens:", tokens.length);
+      const tokens = analyze_assembly(this.sourceCode) as WasmToken[];
       this.analysisResult = tokens;
       this.analysisState = "lexer_ready";
     } catch (error) {
       this.analysisState = "error";
       this.error = error instanceof Error ? error.message : "Analysis failed";
-      console.error("Analysis error:", this.error);
     }
-  };
+  }
 
   // Arrow function = `this` is permanently bound
   loadFile = async (content: string, filename: string): Promise<void> => {

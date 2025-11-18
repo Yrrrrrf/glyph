@@ -46,7 +46,7 @@
     <div 
         tabindex="0" 
         role="button" 
-        class="btn btn-ghost btn-circle"
+        class="btn btn-primary btn-circle"
         aria-label="Select theme"
     >
     </div>

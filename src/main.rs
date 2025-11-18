@@ -22,16 +22,18 @@ fn read_file(filename: &str) -> String {
     })
 }
 
-fn print_lexer_output(tokens: &[AssemblyToken]) {
+fn print_lexer_output(tokens: &[(AssemblyToken, usize)]) {
     println!("=== LEXER OUTPUT ===");
-    for token in tokens {
-        println!("{:>12} | {:?}", token.category(), token);
+    for (token, line) in tokens {
+        println!("Line {:>3} | {:>12} | {:?}", line, token.category(), token);
     }
 }
 
-fn print_parser_output(tokens: &[AssemblyToken]) {
+// UPDATED: Accept tuples of (token, line)
+fn print_parser_output(tokens: &[(AssemblyToken, usize)]) {
     println!("\n=== PARSER OUTPUT ===");
-    let parse_tokens: Vec<parse::Token> = tokens.iter().map(|t| t.to_parse_token()).collect();
+    // Extract just the tokens for the parser, ignoring line numbers
+    let parse_tokens: Vec<parse::Token> = tokens.iter().map(|(t, _)| t.to_parse_token()).collect();
 
     let result = parse::instruction_parser().parse(&parse_tokens);
     println!("{:#?}", result);
