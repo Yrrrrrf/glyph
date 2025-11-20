@@ -8,10 +8,50 @@ export type AnalysisState = "idle" | "loading" | "lexer_ready" | "error";
 export interface HighlightInfo {
   line: number;
   element: string;
+  detail: string;
+}
+
+export function getTokenBadgeClasses(type: string): string {
+  // const baseClasses = "badge badge-sm font-mono px-2 py-0.5";
+  // return `${baseClasses} ${(() => {
+  return `${"badge badge-sm font-mono px-2 py-0.5"} ${
+    (() => {
+      switch (type) {
+        case "instruction":
+          return "badge-info text-info-content";
+        case "directive":
+          return "badge-accent text-accent-content";
+        case "register":
+          return "badge-success text-success-content";
+        case "constant":
+        case "string":
+          return "badge-warning text-warning-content";
+        case "punctuation":
+          return "badge-outline border-base-400 text-base-content";
+        case "invalid":
+          return "badge-error text-error-content";
+        case "symbol":
+        default:
+          return "badge-ghost bg-base-300";
+      }
+    })()
+  }`;
 }
 
 // The Store - Arrow functions preserve `this` binding
 class GlyphStore {
+  // Add this to the GlyphStore class
+  selectedLine = $state<number | null>(null);
+
+  // Add this method
+  setSelectedLine = (line: number | null): void => {
+    this.selectedLine = line;
+    // Auto-clear hover when selecting to avoid visual conflict
+    if (line !== null) {
+      this.highlightInfo = null;
+    }
+  };
+
   sourceCode = $state<string>("");
   currentFile = $state<string | null>(null);
   analysisResult = $state<WasmToken[] | null>(null);

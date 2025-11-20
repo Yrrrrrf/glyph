@@ -11,3 +11,31 @@
     vertical-align: middle;
   }
 }
+
+/* Modern scrollbar styling */
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-base-300) var(--color-base-100);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--color-base-100);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--color-base-300);
+    border-radius: 4px;
+    border: 2px solid var(--color-base-100);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--color-base-400);
+  }
+}

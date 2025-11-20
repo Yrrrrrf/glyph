@@ -8,8 +8,6 @@ interface WasmToken {
   line: number;
 }
 
-// --- EXACT RUST MIRROR ---
-
 function getFilename(): string {
   if (Deno.args.length === 0) {
     console.log("ℹ️  No filename provided, using built-in test code\n");
@@ -29,6 +27,7 @@ function readFile(filename: string): string {
   }
 }
 
+// UPDATED: Now shows 4 columns to match Rust's debug output
 function printLexerOutput(tokens: WasmToken[]): void {
   console.log("=== LEXER OUTPUT ===");
 
@@ -40,11 +39,13 @@ function printLexerOutput(tokens: WasmToken[]): void {
   console.log(`Total tokens: ${tokens.length}\n`);
 
   // Match Rust's format: "Line {:>3} | {:>12} | {:?}"
+  // Added detail column for full type information
   for (const token of tokens) {
     console.log(
       `Line ${String(token.line).padStart(3)} | ` +
         `${token.category.padStart(12)} | ` +
-        `${token.element}`,
+        `${token.element.padEnd(30)} | ` +
+        `${token.detail}`,
     );
   }
 }
@@ -52,11 +53,8 @@ function printLexerOutput(tokens: WasmToken[]): void {
 function printParserOutput(tokens: WasmToken[]): void {
   console.log("\n=== PARSER OUTPUT ===");
   console.log("(Parser not yet integrated in TypeScript)");
-  console.log("Run `cargo run -- <file>` for parser output");
   console.log(`Total tokens available: ${tokens.length}`);
 }
-
-// --- ROBUST TOKEN PARSER WITH DEBUG ---
 
 function parseTokens(rawResult: any): WasmToken[] {
   console.log("🔍 Debugging WASM result structure...");
@@ -70,7 +68,6 @@ function parseTokens(rawResult: any): WasmToken[] {
   console.log(`   Array length: ${rawResult.length}`);
 
   if (rawResult.length > 0) {
-    // Inspect first element
     const first = rawResult[0];
     console.log("   First element:", first);
     console.log("   First element type:", typeof first);
@@ -81,7 +78,6 @@ function parseTokens(rawResult: any): WasmToken[] {
   }
 
   return rawResult.map((item, index) => {
-    // Defensive parsing - handles null/undefined/empty objects
     const element = item?.element !== undefined
       ? String(item.element)
       : `<?token_${index}?>`;
@@ -94,8 +90,6 @@ function parseTokens(rawResult: any): WasmToken[] {
     return { element, category, detail, line };
   });
 }
-
-// --- MAIN ---
 
 async function main(): Promise<void> {
   console.log("=== Glyph Test Runner ===\n");

@@ -25,11 +25,19 @@ fn read_file(filename: &str) -> String {
 fn print_lexer_output(tokens: &[(AssemblyToken, usize)]) {
     println!("=== LEXER OUTPUT ===");
     for (token, line) in tokens {
-        println!("Line {:>3} | {:>12} | {:?}", line, token.category(), token);
+        // Generate type-category string
+        let type_category = match token {
+            AssemblyToken::Instruction(i) => {
+                format!("instruction-{:?}", i.instruction_type())
+            }
+            _ => token.category().to_string(),
+        };
+        
+        // Print: Line | type-category | value
+        println!("Line {:>3} | {:>20} | {}", line, type_category, token);
     }
 }
 
-// UPDATED: Accept tuples of (token, line)
 fn print_parser_output(tokens: &[(AssemblyToken, usize)]) {
     println!("\n=== PARSER OUTPUT ===");
     // Extract just the tokens for the parser, ignoring line numbers

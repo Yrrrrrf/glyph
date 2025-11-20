@@ -1,28 +1,41 @@
 <script lang="ts">
-  type HighlightInfo = { line: number; element: string } | null;
+  import type { HighlightInfo } from '$lib/stores/glyphStore.svelte';
+  import { getTokenBadgeClasses } from '$lib/stores/glyphStore.svelte';
 
-  let { code, highlight } = $props<{
+
+  let { 
+    code, 
+    highlight,
+    scrollToLine = $bindable(null)
+  } = $props<{
     code: string;
-    highlight: HighlightInfo;
+    highlight: (HighlightInfo & { detail?: string; }) | null;
+    scrollToLine?: number | null;
   }>();
 
-  export interface CodeEditorProps {
-    code: string;
-    highlight: HighlightInfo | null;
-  }
+  let editorRef = $state<HTMLDivElement>();
+  
+  $effect(() => {
+    if (scrollToLine && editorRef) {
+      const lineElements = editorRef.querySelectorAll('[data-line]');
+      const targetLine = lineElements[scrollToLine - 1];
+      if (targetLine) {
+        targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Clear after scrolling
+      setTimeout(() => scrollToLine = null, 100);
+    }
+  });
+
   let lines = $derived(code.split('\n'));
 
-  // Split line into parts, highlighting matches
   function getLineParts(line: string, element: string | null): Array<{ text: string; isMatch: boolean }> {
     if (!element || !line.includes(element)) {
       return [{ text: line, isMatch: false }];
     }
-
-    // Escape regex special characters
     const escapedElement = element.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedElement})`, 'g');
     const parts = line.split(regex);
-    
     return parts.map(part => ({
       text: part,
       isMatch: part === element
@@ -30,9 +43,11 @@
   }
 </script>
 
+<div bind:this={editorRef} class="bg-base-100 border border-base-300 rounded-lg overflow-auto h-full custom-scrollbar">
+
 <div class="bg-base-100 border border-base-300 rounded-lg overflow-auto h-full">
   <div class="font-mono text-sm">
-    {#each lines as line, i (i)} <!-- Use index as key for stability -->
+    {#each lines as line, i (i)}
       <div 
         class="flex hover:bg-base-200 transition-colors duration-150" 
         class:bg-base-300={highlight?.line === i + 1}
@@ -43,8 +58,8 @@
         <div class="px-3 py-1 flex-grow whitespace-pre">
           {#if highlight?.line === i + 1 && highlight?.element}
             {#each getLineParts(line, highlight.element) as part, j (j)}
-              {#if part.isMatch}
-                <span class="badge badge-primary badge-sm font-mono px-1 py-0 mx-0.5 align-middle">
+              {#if part.isMatch && highlight.detail}
+                <span class={getTokenBadgeClasses(highlight.detail)}>
                   {part.text}
                 </span>
               {:else}
@@ -58,4 +73,5 @@
       </div>
     {/each}
   </div>
+</div>
 </div>

@@ -1,0 +1,2 @@
+MOV AX, 10h
+ADD AX, 1

@@ -1,4 +1,6 @@
 //! Assembly token definitions using logic_tracer-style macros
+#![allow(dead_code)]
+#![allow(unused)]
 
 use std::fmt::Debug;
 
@@ -139,4 +141,62 @@ impl std::fmt::Display for AssemblyToken {
         };
         write!(f, "{}", s)
     }
+}
+
+/// Helper macro to define categorized token enums
+/// Usage: define_categorized_tokens!(Instruction, InstructionType {
+///     DataTransfer => [MOV, PUSH, POP, XCHG],
+///     Arithmetic => [ADD, SUB, MUL, DIV],
+/// });
+#[macro_export]
+macro_rules! define_categorized_tokens {
+    (
+        $enum_name:ident, $type_enum:ident {
+            $(
+                $category:ident => [$($variant:ident),+ $(,)?]
+            ),+ $(,)?
+        }
+    ) => {
+        #[derive(Debug, Clone, PartialEq, Serialize)]
+        pub enum $type_enum {
+            $($category),+
+        }
+
+        #[derive(Debug, Clone, PartialEq, Serialize)]
+        pub enum $enum_name {
+            $(
+                $($variant),+
+            ),+
+        }
+
+        impl crate::tokens::Token for $enum_name {
+            fn from_str(s: &str) -> Option<Self> {
+                let upper = s.to_uppercase();
+                match upper.as_str() {
+                    $(
+                        $(stringify!($variant) => Some(Self::$variant)),+
+                    ),+,
+                    _ => None
+                }
+            }
+
+            fn to_string(&self) -> String {
+                match self {
+                    $(
+                        $(Self::$variant => String::from(stringify!($variant))),+
+                    ),+
+                }
+            }
+        }
+
+        impl $enum_name {
+            pub fn instruction_type(&self) -> $type_enum {
+                match self {
+                    $(
+                        $(Self::$variant => $type_enum::$category),+
+                    ),+
+                }
+            }
+        }
+    };
 }
