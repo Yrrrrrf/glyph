@@ -1,19 +1,17 @@
+// src/parse.rs
 #![allow(dead_code)]
 
 use chumsky::prelude::*;
-use std::str::FromStr;
 
-// --- Self-Contained Definitions ---
-// To avoid creating new files, all necessary types are defined here.
+// --- AST Definitions ---
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Mnemonic(String),
+    Directive(String),
     Register(String),
     Immediate(String),
     Label(String),
-    // Added to handle other parts of the syntax shown in `+page.svelte`
-    Directive(String),
     Punctuation(char),
     String(String),
 }
@@ -22,82 +20,146 @@ pub enum Token {
 pub enum Operand {
     Register(String),
     Immediate(i64),
+    StringLiteral(String),
     Label(String),
+    Memory(Box<Operand>), 
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Mnemonic {
-    MOV,
-    SYSCALL,
-    // Add other mnemonics here as needed
-    UNKNOWN,
-}
-
-// Implement FromStr to easily convert token strings to the Mnemonic enum.
-impl FromStr for Mnemonic {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_ascii_uppercase().as_str() {
-            "MOV" => Self::MOV,
-            "SYSCALL" => Self::SYSCALL,
-            _ => Self::UNKNOWN,
-        })
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Instruction {
-    pub mnemonic: Mnemonic,
-    pub operand1: Option<Operand>,
-    pub operand2: Option<Operand>,
+    pub mnemonic: String,
+    pub operands: Vec<Operand>,
 }
 
-// --- Corrected Parser Logic ---
+#[derive(Debug, Clone, PartialEq)]
+pub struct Directive {
+    pub name: String,
+    pub args: Vec<Operand>,
+}
 
-// A type alias for the parser's error type for brevity.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Statement {
+    Label(String),
+    Instruction(Instruction),
+    Directive(Directive),
+    // New: Represents "var1 DB 10" or "stack SEGMENT"
+    DataDefinition { label: String, directive: Directive },
+    Empty, 
+}
+
 type ParseErr<'a> = extra::Err<Simple<'a, Token>>;
 
-/// Parses a mnemonic token into a `Mnemonic` enum.
-fn mnemonic_parser<'a>() -> impl Parser<'a, &'a [Token], Mnemonic, ParseErr<'a>> + Clone {
-    // Replaced `filter_map` with the correct `select!` macro.
-    select! {
-        Token::Mnemonic(s) => Mnemonic::from_str(&s).unwrap_or(Mnemonic::UNKNOWN),
-    }
-    .labelled("mnemonic")
-}
+// --- Parser Logic ---
 
-/// Parses an operand token into an `Operand` enum.
-fn operand_parser<'a>() -> impl Parser<'a, &'a [Token], Operand, ParseErr<'a>> + Clone {
-    // Replaced `filter_map` with the correct `select!` macro.
+fn base_operand_parser<'a>() -> impl Parser<'a, &'a [Token], Operand, ParseErr<'a>> + Clone {
     select! {
         Token::Register(s) => Operand::Register(s),
         Token::Immediate(s) => {
-            let val = if let Some(hex_val) = s.strip_prefix("0x") {
+            let val = if let Some(hex_val) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
                 i64::from_str_radix(hex_val, 16).unwrap_or(0)
             } else if let Some(hex_val) = s.strip_suffix(|c| c == 'h' || c == 'H') {
-                // Parse hexadecimal with 'h' suffix like "0Ah"
                 i64::from_str_radix(hex_val, 16).unwrap_or(0)
+            } else if let Some(bin_val) = s.strip_suffix(|c| c == 'b' || c == 'B') {
+                i64::from_str_radix(bin_val, 2).unwrap_or(0)
+            } else if let Some(dec_val) = s.strip_suffix(|c| c == 'd' || c == 'D') {
+                 s[..s.len()-1].parse().unwrap_or(0)
             } else {
                 s.parse().unwrap_or(0)
             };
             Operand::Immediate(val)
         },
         Token::Label(s) => Operand::Label(s),
+        Token::String(s) => Operand::StringLiteral(s),
     }
     .labelled("operand")
 }
 
-/// Parses a full instruction.
-pub fn instruction_parser<'a>() -> impl Parser<'a, &'a [Token], Instruction, ParseErr<'a>> + Clone {
-    mnemonic_parser()
-        .then(operand_parser().repeated().at_most(2).collect::<Vec<_>>())
-        .map(|(mnemonic, operands)| {
-            let mut ops = operands.into_iter();
-            Instruction {
+fn operand_parser<'a>() -> impl Parser<'a, &'a [Token], Operand, ParseErr<'a>> + Clone {
+    recursive(|operand| {
+        let memory_access = just(Token::Punctuation('['))
+            .ignore_then(operand)
+            .then_ignore(just(Token::Punctuation(']')))
+            .map(|op| Operand::Memory(Box::new(op)));
+
+        memory_access.or(base_operand_parser())
+    })
+}
+
+fn operand_list_parser<'a>() -> impl Parser<'a, &'a [Token], Vec<Operand>, ParseErr<'a>> + Clone {
+    operand_parser()
+        .separated_by(just(Token::Punctuation(',')))
+        .collect()
+}
+
+fn instruction_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone {
+    select! { Token::Mnemonic(s) => s }
+        .then(operand_list_parser().or_not())
+        .map(|(mnemonic, ops)| {
+            Statement::Instruction(Instruction {
                 mnemonic,
-                operand1: ops.next(),
-                operand2: ops.next(),
-            }
+                operands: ops.unwrap_or_default(),
+            })
         })
         .labelled("instruction")
+}
+
+// Parses just the directive part: "DB 10" or "SEGMENT"
+fn raw_directive_parser<'a>() -> impl Parser<'a, &'a [Token], Directive, ParseErr<'a>> + Clone {
+    let dot_arg = just(Token::Punctuation('.'))
+        .ignore_then(select! { Token::Label(s) => s })
+        .map(|s| Operand::Label(format!(".{}", s)));
+
+    let args_parser = operand_parser().or(dot_arg)
+        .separated_by(just(Token::Punctuation(',')))
+        .collect();
+
+    select! { Token::Directive(s) => s }
+        .then(args_parser)
+        .map(|(name, args)| Directive { name, args })
+}
+
+// Parses standalone directives: "ORG 100h" or ".CODE"
+fn standalone_directive_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone {
+    raw_directive_parser().map(Statement::Directive).labelled("directive")
+}
+
+// Parses defined variables/segments: "var1 DB 10" or "stack SEGMENT"
+fn data_definition_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone {
+    select! { Token::Label(s) => s }
+        .then(raw_directive_parser())
+        .map(|(label, directive)| Statement::DataDefinition { label, directive })
+        .labelled("data_def")
+}
+
+fn label_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone {
+    let normal_label = select! { Token::Label(s) => s };
+    
+    let local_label = just(Token::Punctuation('.'))
+        .ignore_then(select! { Token::Label(s) => s })
+        .map(|s| format!(".{}", s));
+
+    normal_label.or(local_label)
+        .then_ignore(just(Token::Punctuation(':')))
+        .map(Statement::Label)
+        .labelled("label")
+}
+
+pub fn program_parser<'a>() -> impl Parser<'a, &'a [Token], Vec<Statement>, ParseErr<'a>> + Clone {
+    choice((
+        label_parser(),
+        data_definition_parser(), // Check "Label Directive" before "Instruction"
+        instruction_parser(),
+        standalone_directive_parser(),
+    ))
+    .recover_with(skip_then_retry_until(
+        any().ignored(), 
+        choice((
+            select! { Token::Mnemonic(_) => () },
+            select! { Token::Directive(_) => () },
+            // Careful recovery around labels
+            select! { Token::Label(_) => () }.then(just(Token::Punctuation(':'))).ignored(),
+        ))
+    ))
+    .repeated()
+    .collect()
 }

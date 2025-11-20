@@ -43,9 +43,27 @@ fn print_parser_output(tokens: &[(AssemblyToken, usize)]) {
     // Extract just the tokens for the parser, ignoring line numbers
     let parse_tokens: Vec<parse::Token> = tokens.iter().map(|(t, _)| t.to_parse_token()).collect();
 
-    let result = parse::instruction_parser().parse(&parse_tokens);
-    println!("{:#?}", result);
+    // CHANGED: Use program_parser() instead of instruction_parser()
+    let result = parse::program_parser().parse(&parse_tokens);
+    
+    match result.output() {
+        Some(ast) => {
+            println!("Successfully parsed {} statements:\n", ast.len());
+            for stmt in ast {
+                println!("{:?}", stmt);
+            }
+        },
+        None => println!("Parsing failed completely."),
+    }
+
+    if result.has_errors() {
+        println!("\nErrors encountered:");
+        for err in result.errors() {
+            println!("{:?}", err);
+        }
+    }
 }
+
 
 fn main() {
     let filename = get_filename();
