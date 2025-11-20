@@ -1,4 +1,4 @@
-//! Literal constants (decimal, hex, binary, string)
+// src/tokens/constant.rs
 use super::*;
 use serde::Serialize;
 
@@ -6,47 +6,54 @@ use serde::Serialize;
 pub enum Constant {
     Decimal(u64),
     Hexadecimal(u64),
-    Binary(u8), // Store as u8 for simplicity
+    Binary(u8),
     String(String),
 }
 
 impl Token for Constant {
-    // src/tokens/constant.rs
-
-    // Update the from_str method to handle both quote types
     fn from_str(s: &str) -> Option<Self> {
-        // String: "hello" OR 'hello'
+        // 1. Strings
         if (s.starts_with('"') && s.ends_with('"') && s.len() > 1)
             || (s.starts_with('\'') && s.ends_with('\'') && s.len() > 1)
         {
             return Some(Constant::String(s[1..s.len() - 1].to_string()));
         }
 
-        // Rest of your existing logic...
-        // Hex: FFh or 0FFh
-        if let Some(hex_part) = s.strip_suffix('h').or_else(|| s.strip_suffix('H')) {
+        // 2. Hexadecimal with Prefix (0x100)
+        if let Some(hex_part) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
             if !hex_part.is_empty() {
+                 return u64::from_str_radix(hex_part, 16)
+                    .ok()
+                    .map(Constant::Hexadecimal);
+            }
+        }
+
+        // 3. Hexadecimal with Suffix (0FFh)
+        // STRICT CHECK: Must start with a digit to be a hex constant in this parser
+        // This prevents 'Ah' (Register) from being read as Hex(10)
+        if let Some(hex_part) = s.strip_suffix('h').or_else(|| s.strip_suffix('H')) {
+            if !hex_part.is_empty() && s.chars().next()?.is_numeric() {
                 return u64::from_str_radix(hex_part, 16)
                     .ok()
                     .map(Constant::Hexadecimal);
             }
         }
 
-        // Binary: 1010b
+        // 4. Binary (1010b)
         if let Some(bin_part) = s.strip_suffix('b').or_else(|| s.strip_suffix('B')) {
-            if bin_part.chars().all(|c| c == '0' || c == '1') {
+            if !bin_part.is_empty() && s.chars().next()?.is_numeric() && bin_part.chars().all(|c| c == '0' || c == '1') {
                 return u8::from_str_radix(bin_part, 2).ok().map(Constant::Binary);
             }
         }
 
-        // Decimal: 123
+        // 5. Decimal (123)
         s.parse().ok().map(Constant::Decimal)
     }
 
     fn to_string(&self) -> String {
         match self {
             Constant::Decimal(n) => n.to_string(),
-            Constant::Hexadecimal(n) => format!("{:X}h", n),
+            Constant::Hexadecimal(n) => format!("0x{:X}", n), // Standardize on 0x for output
             Constant::Binary(n) => format!("{:b}b", n),
             Constant::String(s) => format!("\"{}\"", s),
         }
