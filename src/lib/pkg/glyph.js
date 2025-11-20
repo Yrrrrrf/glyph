@@ -151,6 +151,21 @@ export function analyze_assembly(source) {
   return takeObject(ret);
 }
 
+/**
+ * @param {string} source
+ * @returns {any}
+ */
+export function analyze_full_program(source) {
+  const ptr0 = passStringToWasm0(
+    source,
+    wasm.__wbindgen_export,
+    wasm.__wbindgen_export2,
+  );
+  const len0 = WASM_VECTOR_LEN;
+  const ret = wasm.analyze_full_program(ptr0, len0);
+  return takeObject(ret);
+}
+
 const EXPECTED_RESPONSE_TYPES = new Set(["basic", "cors", "default"]);
 
 async function __wbg_load(module, imports) {
@@ -192,6 +207,10 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
   const imports = {};
   imports.wbg = {};
+  imports.wbg.__wbg_Error_e83987f665cf5504 = function (arg0, arg1) {
+    const ret = Error(getStringFromWasm0(arg0, arg1));
+    return addHeapObject(ret);
+  };
   imports.wbg.__wbg___wbindgen_throw_b855445ff6a94295 = function (arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
   };
@@ -215,6 +234,11 @@ function __wbg_get_imports() {
   imports.wbg.__wbindgen_cast_2241b6af4c4b2941 = function (arg0, arg1) {
     // Cast intrinsic for `Ref(String) -> Externref`.
     const ret = getStringFromWasm0(arg0, arg1);
+    return addHeapObject(ret);
+  };
+  imports.wbg.__wbindgen_cast_4625c577ab2ec9ee = function (arg0) {
+    // Cast intrinsic for `U64 -> Externref`.
+    const ret = BigInt.asUintN(64, arg0);
     return addHeapObject(ret);
   };
   imports.wbg.__wbindgen_cast_d6cd19b81560fd6e = function (arg0) {

@@ -32,7 +32,7 @@ fn print_lexer_output(tokens: &[(AssemblyToken, usize)]) {
             }
             _ => token.category().to_string(),
         };
-        
+
         // Print: Line | type-category | value
         println!("Line {:>3} | {:>20} | {}", line, type_category, token);
     }
@@ -45,14 +45,14 @@ fn print_parser_output(tokens: &[(AssemblyToken, usize)]) {
 
     // CHANGED: Use program_parser() instead of instruction_parser()
     let result = parse::program_parser().parse(&parse_tokens);
-    
+
     match result.output() {
         Some(ast) => {
             println!("Successfully parsed {} statements:\n", ast.len());
             for stmt in ast {
                 println!("{:?}", stmt);
             }
-        },
+        }
         None => println!("Parsing failed completely."),
     }
 
@@ -63,7 +63,6 @@ fn print_parser_output(tokens: &[(AssemblyToken, usize)]) {
         }
     }
 }
-
 
 fn main() {
     let filename = get_filename();

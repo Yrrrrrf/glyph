@@ -22,7 +22,7 @@ pub enum Operand {
     Immediate(i64),
     StringLiteral(String),
     Label(String),
-    Memory(Box<Operand>), 
+    Memory(Box<Operand>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -44,7 +44,7 @@ pub enum Statement {
     Directive(Directive),
     // New: Represents "var1 DB 10" or "stack SEGMENT"
     DataDefinition { label: String, directive: Directive },
-    Empty, 
+    Empty,
 }
 
 type ParseErr<'a> = extra::Err<Simple<'a, Token>>;
@@ -109,7 +109,8 @@ fn raw_directive_parser<'a>() -> impl Parser<'a, &'a [Token], Directive, ParseEr
         .ignore_then(select! { Token::Label(s) => s })
         .map(|s| Operand::Label(format!(".{}", s)));
 
-    let args_parser = operand_parser().or(dot_arg)
+    let args_parser = operand_parser()
+        .or(dot_arg)
         .separated_by(just(Token::Punctuation(',')))
         .collect();
 
@@ -119,8 +120,11 @@ fn raw_directive_parser<'a>() -> impl Parser<'a, &'a [Token], Directive, ParseEr
 }
 
 // Parses standalone directives: "ORG 100h" or ".CODE"
-fn standalone_directive_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone {
-    raw_directive_parser().map(Statement::Directive).labelled("directive")
+fn standalone_directive_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone
+{
+    raw_directive_parser()
+        .map(Statement::Directive)
+        .labelled("directive")
 }
 
 // Parses defined variables/segments: "var1 DB 10" or "stack SEGMENT"
@@ -133,12 +137,13 @@ fn data_definition_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, Parse
 
 fn label_parser<'a>() -> impl Parser<'a, &'a [Token], Statement, ParseErr<'a>> + Clone {
     let normal_label = select! { Token::Label(s) => s };
-    
+
     let local_label = just(Token::Punctuation('.'))
         .ignore_then(select! { Token::Label(s) => s })
         .map(|s| format!(".{}", s));
 
-    normal_label.or(local_label)
+    normal_label
+        .or(local_label)
         .then_ignore(just(Token::Punctuation(':')))
         .map(Statement::Label)
         .labelled("label")
@@ -152,13 +157,15 @@ pub fn program_parser<'a>() -> impl Parser<'a, &'a [Token], Vec<Statement>, Pars
         standalone_directive_parser(),
     ))
     .recover_with(skip_then_retry_until(
-        any().ignored(), 
+        any().ignored(),
         choice((
             select! { Token::Mnemonic(_) => () },
             select! { Token::Directive(_) => () },
             // Careful recovery around labels
-            select! { Token::Label(_) => () }.then(just(Token::Punctuation(':'))).ignored(),
-        ))
+            select! { Token::Label(_) => () }
+                .then(just(Token::Punctuation(':')))
+                .ignored(),
+        )),
     ))
     .repeated()
     .collect()

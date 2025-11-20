@@ -2,10 +2,12 @@
 #![allow(dead_code)]
 #![allow(unused)]
 
+pub mod analysis;
 pub mod lex;
 pub mod parse;
 pub mod tokens;
 
+use crate::analysis::Analyzer;
 use crate::lex::AssemblyLexer;
 use crate::tokens::{AssemblyToken, Token};
 use serde::Serialize;
@@ -42,4 +44,16 @@ pub fn analyze_assembly(source: &str) -> JsValue {
         .collect();
 
     serde_wasm_bindgen::to_value(&results).unwrap_or(JsValue::NULL)
+}
+
+#[wasm_bindgen]
+pub fn analyze_full_program(source: &str) -> JsValue {
+    // 1. Lexer
+    let tokens_with_lines: Vec<_> = AssemblyLexer::new(source).collect();
+
+    // 2. Analyzer (Fase 2)
+    let mut analyzer = Analyzer::new();
+    let result = analyzer.analyze(tokens_with_lines);
+
+    serde_wasm_bindgen::to_value(&result).unwrap_or(JsValue::NULL)
 }

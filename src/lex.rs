@@ -85,7 +85,10 @@ impl Iterator for AssemblyLexer {
             }
             // Return the whole [BX+SI] as a Symbol (or Invalid if empty)
             // We treat memory references as Symbols in the Lexer phase for simplicity
-            return Some((AssemblyToken::Symbol(crate::tokens::symbol::Symbol(accum)), start_line));
+            return Some((
+                AssemblyToken::Symbol(crate::tokens::symbol::Symbol(accum)),
+                start_line,
+            ));
         }
 
         // 4. Handle Punctuation
@@ -97,7 +100,13 @@ impl Iterator for AssemblyLexer {
             // So we only return punctuation if it doesn't look like the start of a word
             // Exception: Comma and Colon are always punctuation
             if ch == ',' || ch == ':' {
-                return Some((AssemblyToken::Punctuation(crate::tokens::punctuation::Punctuation::from_str(&single_char_str).unwrap()), start_line));
+                return Some((
+                    AssemblyToken::Punctuation(
+                        crate::tokens::punctuation::Punctuation::from_str(&single_char_str)
+                            .unwrap(),
+                    ),
+                    start_line,
+                ));
             }
             // For '.' or others, we fall through to word accumulation to see if it's .DATA
         }
@@ -105,7 +114,7 @@ impl Iterator for AssemblyLexer {
         // 5. Accumulate a Word
         let mut accum = String::new();
         let start_pos = self.pos;
-        
+
         while self.pos < self.chars.len() {
             let c = self.chars[self.pos];
             // Break on whitespace, newline, or hard punctuation
@@ -118,47 +127,62 @@ impl Iterator for AssemblyLexer {
 
         // 6. Check for "Compound Words" (Lookahead)
         // Requirement: "byte ptr", ".data segment", "dup(xxx)"
-        
+
         // A. Check DUP(xxx)
         if accum.to_lowercase() == "dup" {
             // Check if next char is '(' ignoring whitespace
             let mut temp_pos = self.pos;
-            while temp_pos < self.chars.len() && self.chars[temp_pos].is_whitespace() && self.chars[temp_pos] != '\n' {
+            while temp_pos < self.chars.len()
+                && self.chars[temp_pos].is_whitespace()
+                && self.chars[temp_pos] != '\n'
+            {
                 temp_pos += 1;
             }
-            
+
             if temp_pos < self.chars.len() && self.chars[temp_pos] == '(' {
                 // It is a DUP! Consume the whitespace and the parens
                 let mut full_dup = accum.clone();
-                
+
                 // Add the gap spaces if any (optional, usually we normalize, but let's just grab the parens)
                 // Simply fast forward self.pos to temp_pos and consume until ')'
-                self.pos = temp_pos; 
-                
+                self.pos = temp_pos;
+
                 while self.pos < self.chars.len() {
                     let c = self.chars[self.pos];
                     full_dup.push(c);
                     self.pos += 1;
-                    if c == ')' { break; }
+                    if c == ')' {
+                        break;
+                    }
                 }
                 // Return as Symbol (since DUP(3) isn't exactly a keyword constant, it's a construct)
                 // or define a specific token for it. For this assignment, Symbol is safest.
-                return Some((AssemblyToken::Symbol(crate::tokens::symbol::Symbol(full_dup)), start_line));
+                return Some((
+                    AssemblyToken::Symbol(crate::tokens::symbol::Symbol(full_dup)),
+                    start_line,
+                ));
             }
         }
 
         // B. Check "WORD PTR", "BYTE PTR", ".DATA SEGMENT", etc.
         // We look ahead for specific keywords
         let lower_accum = accum.to_lowercase();
-        if lower_accum == "byte" || lower_accum == "word" || lower_accum == "dword" 
-           || lower_accum == ".data" || lower_accum == ".code" || lower_accum == ".stack" {
-            
+        if lower_accum == "byte"
+            || lower_accum == "word"
+            || lower_accum == "dword"
+            || lower_accum == ".data"
+            || lower_accum == ".code"
+            || lower_accum == ".stack"
+        {
             // Peek next word
             let mut temp_pos = self.pos;
             let mut gap_whitespace = String::new();
-            
+
             // Skip white
-            while temp_pos < self.chars.len() && self.chars[temp_pos].is_whitespace() && self.chars[temp_pos] != '\n' {
+            while temp_pos < self.chars.len()
+                && self.chars[temp_pos].is_whitespace()
+                && self.chars[temp_pos] != '\n'
+            {
                 gap_whitespace.push(self.chars[temp_pos]);
                 temp_pos += 1;
             }
@@ -167,14 +191,17 @@ impl Iterator for AssemblyLexer {
             let mut next_word = String::new();
             while temp_pos < self.chars.len() {
                 let c = self.chars[temp_pos];
-                if c.is_whitespace() || c == '\n' || c == ',' || c == ':' { break; }
+                if c.is_whitespace() || c == '\n' || c == ',' || c == ':' {
+                    break;
+                }
                 next_word.push(c);
                 temp_pos += 1;
             }
 
             let lower_next = next_word.to_lowercase();
-            let merged = if (lower_accum.ends_with("ptr") == false && lower_next == "ptr") 
-                         || (lower_next == "segment") {
+            let merged = if (lower_accum.ends_with("ptr") == false && lower_next == "ptr")
+                || (lower_next == "segment")
+            {
                 // FOUND COMPOUND: "byte" + " " + "ptr"
                 Some((gap_whitespace, next_word))
             } else {
@@ -195,13 +222,16 @@ impl Iterator for AssemblyLexer {
             } else {
                 // If it contains spaces (like "byte ptr") but wasn't in our enum, try_tokenize fails.
                 // But since we updated pseudoinstruction.rs, "BYTE PTR" should match!
-                
+
                 // Fallback for things like "dup(5)" or "[bx]" which won't match basic tokens
                 // We return them as Symbols.
-                return Some((AssemblyToken::Symbol(crate::tokens::symbol::Symbol(accum)), start_line));
+                return Some((
+                    AssemblyToken::Symbol(crate::tokens::symbol::Symbol(accum)),
+                    start_line,
+                ));
             }
         }
-        
+
         // Fallback for lone punctuation that wasn't caught earlier (like '.')
         if let Some(p) = crate::tokens::punctuation::Punctuation::from_str(&ch.to_string()) {
             self.pos += 1;
@@ -214,7 +244,7 @@ impl Iterator for AssemblyLexer {
 }
 
 impl AssemblyLexer {
-// In src/lex.rs
+    // In src/lex.rs
 
     fn parse_quoted_string(&mut self, current_line: usize) -> Option<(AssemblyToken, usize)> {
         let quote_char = self.chars[self.pos];
@@ -224,7 +254,7 @@ impl AssemblyLexer {
 
         while self.pos < self.chars.len() {
             let ch = self.chars[self.pos];
-            
+
             // CRITICAL FIX: Stop if we hit a newline!
             if ch == '\n' {
                 // Return what we have as Invalid, so the rest of the file can be processed
@@ -242,7 +272,7 @@ impl AssemblyLexer {
                 break;
             }
         }
-        
+
         // End of file reached without closing quote
         Some((AssemblyToken::Invalid(accum), current_line))
     }
@@ -271,19 +301,21 @@ impl AssemblyLexer {
 
         // 4. Symbols (Catch-all)
         // Modified logic in tokens/symbol.rs handles basic identifiers.
-        // For "Complex" symbols like [BX] or DUP(3), symbol::from_str might fail 
+        // For "Complex" symbols like [BX] or DUP(3), symbol::from_str might fail
         // if it enforces alphanumeric only.
         // We might need to relax symbol.rs OR handle it here.
         // Let's check symbol.rs...
-        
+
         if let Some(sym) = crate::tokens::symbol::Symbol::from_str(s) {
             return Some(AssemblyToken::Symbol(sym));
         }
-        
+
         // If we are here, it might be a "Compound Symbol" that Symbol::from_str rejected
         // (e.g. contains brackets or parens). We should accept it if it came from our greedy logic.
         if s.contains('[') || s.contains('(') {
-             return Some(AssemblyToken::Symbol(crate::tokens::symbol::Symbol(s.to_string())));
+            return Some(AssemblyToken::Symbol(crate::tokens::symbol::Symbol(
+                s.to_string(),
+            )));
         }
 
         None

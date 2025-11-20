@@ -20,7 +20,7 @@ export type TokenCategory =
 
 export interface SymbolRecord {
   name: string;
-  type_: "Variable" | "Label" | "Constant";
+  type_: "Variable" | "Label" | "Constant"; // Matches Rust "type_" field
   data_type: "Byte" | "Word" | "Dword" | "None";
   value: number;
   segment: string;

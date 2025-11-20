@@ -8,9 +8,9 @@ define_tokens!(Pseudoinstruction {
     Segment => ["SEGMENT"], Ends => ["ENDS"], Db => ["DB"], Dw => ["DW"],
     Dd => ["DD"], Dup => ["DUP"], Equ => ["EQU"], End => ["END"],
     // Single word PTRs (if they appear alone)
-    Ptr => ["PTR"], 
+    Ptr => ["PTR"],
     Byte => ["BYTE"], Word => ["WORD"], Dword => ["DWORD"],
-    
+
     // Standard Sections
     Data => [".DATA"], Code => [".CODE"], Text => [".TEXT"], Bss => [".BSS"],
     // Global => ["GLOBAL", "GLOBL"], Section => ["SECTION"], Macro => ["MACRO"],

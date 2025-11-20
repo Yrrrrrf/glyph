@@ -5,23 +5,12 @@
   import Header from '$lib/components/Header.svelte';
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import AnalysisPanel from '$lib/components/AnalysisPanel.svelte';
-
-  // DEBUG: Watch all store changes
-  $effect(() => {
-    console.log('🎭 PAGE - Store changed:', {
-      file: glyphStore.currentFile,
-      tab: glyphStore.activeTab,
-      tokens: glyphStore.TOKEN_COUNT,
-      error: glyphStore.error,
-      hasFile: glyphStore.HAS_FILE
-    });
-  });
+  import ParserView from '$lib/components/ParserView.svelte';
 </script>
 
 <div class="flex flex-col h-screen">
   <Header />
   
-  <!-- ERROR DISPLAY -->
   {#if glyphStore.error}
     <div class="bg-error text-error-content p-3 text-center text-sm">
       {glyphStore.error}
@@ -44,21 +33,19 @@
         </div>
         <div class="flex-1">
           <h3 class="text-lg font-semibold mb-2">Token Analysis</h3>
+          <!-- FIXED: Use lexerResult here -->
           <AnalysisPanel
-            tokens={glyphStore.analysisResult ?? []}
+            tokens={glyphStore.lexerResult ?? []} 
             onTokenHover={glyphStore.setHighlight}
+            onTokenSelect={glyphStore.setSelectedLine}
             highlightedInfo={glyphStore.highlightInfo}
+            selectedLine={glyphStore.selectedLine}
           />
         </div>
       </div>
       
     {:else if glyphStore.activeTab === 'parser'}
-      <div class="flex items-center justify-center h-full">
-        <div class="text-center">
-          <div class="text-6xl mb-4">🚧</div>
-          <h3 class="text-xl font-semibold">Parser Under Construction</h3>
-        </div>
-      </div>
+      <ParserView />
     {/if}
   </main>
 </div>

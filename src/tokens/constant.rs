@@ -22,7 +22,7 @@ impl Token for Constant {
         // 2. Hexadecimal with Prefix (0x100)
         if let Some(hex_part) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
             if !hex_part.is_empty() {
-                 return u64::from_str_radix(hex_part, 16)
+                return u64::from_str_radix(hex_part, 16)
                     .ok()
                     .map(Constant::Hexadecimal);
             }
@@ -41,7 +41,10 @@ impl Token for Constant {
 
         // 4. Binary (1010b)
         if let Some(bin_part) = s.strip_suffix('b').or_else(|| s.strip_suffix('B')) {
-            if !bin_part.is_empty() && s.chars().next()?.is_numeric() && bin_part.chars().all(|c| c == '0' || c == '1') {
+            if !bin_part.is_empty()
+                && s.chars().next()?.is_numeric()
+                && bin_part.chars().all(|c| c == '0' || c == '1')
+            {
                 return u8::from_str_radix(bin_part, 2).ok().map(Constant::Binary);
             }
         }

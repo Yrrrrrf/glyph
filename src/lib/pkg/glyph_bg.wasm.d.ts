@@ -3,6 +3,7 @@
 export const memory: WebAssembly.Memory;
 export const greet: (a: number, b: number) => void;
 export const analyze_assembly: (a: number, b: number) => number;
+export const analyze_full_program: (a: number, b: number) => number;
 export const __wbindgen_export: (a: number, b: number) => number;
 export const __wbindgen_export2: (
   a: number,
