@@ -132,6 +132,7 @@ impl fmt::Display for Token {
                 constant::Type::Char(c) => write!(f, "'{}'", c),
             },
 
+            // todo: Remove all of this...
             Token::Comma => write!(f, ","),
             Token::Colon => write!(f, ":"),
             Token::LBracket => write!(f, "["),
