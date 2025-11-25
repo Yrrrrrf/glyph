@@ -20,11 +20,9 @@
 
   // Constants based on Tailwind classes (leading-6 = 24px, p-4 = 16px)
   const LINE_HEIGHT = 24; 
-  // const PADDING_TOP = 16; // Visual padding, matches p-4
 
   // --- AUTO SCROLL EFFECT ---
   $effect(() => {
-    // We only scroll if we have a valid line and the ref exists
     if (selectedLine && textAreaRef) {
         scrollToLine(selectedLine);
     }
@@ -36,19 +34,15 @@
     const currentScroll = textAreaRef.scrollTop;
     const clientHeight = textAreaRef.clientHeight;
     
-    // The exact pixel offset where this line begins (relative to the top of the content)
-    // Line 1 is at offset 0 (logic-wise for scrolling calculation)
+    // Line 1 is at offset 0
     const lineOffset = (line - 1) * LINE_HEIGHT;
     
-    // Calculate boundaries of the current viewport
-    // We add a little buffer (LINE_HEIGHT) so lines at the very edge trigger a scroll
+    // Buffer logic
     const isAbove = lineOffset < currentScroll;
     const isBelow = lineOffset > (currentScroll + clientHeight - LINE_HEIGHT * 2);
 
     if (isAbove || isBelow) {
-        // Scroll to center the line
         const targetScroll = lineOffset - (clientHeight / 2) + (LINE_HEIGHT / 2);
-        
         textAreaRef.scrollTo({
             top: Math.max(0, targetScroll),
             behavior: 'smooth'
@@ -155,14 +149,23 @@
 
     <!-- EDITOR CONTAINER -->
     <div class="relative flex-grow h-full overflow-hidden bg-base-100">
-        <!-- LAYER 0: LINE HIGHLIGHTS -->
+        
+        <!-- LAYER 0: LINE HIGHLIGHTS & SELECTION BAR -->
         <div bind:this={backdropRef} class="absolute inset-0 pt-4 pb-4 w-full pointer-events-none overflow-hidden">
             {#each lines as _, i}
+                {@const isHovered = glyphStore.highlightInfo?.line === i + 1}
+                {@const isSelected = glyphStore.selectedLine === i + 1}
+
                 <div 
-                    class="w-full h-6 transition-colors duration-75"
-                    class:bg-warning={glyphStore.highlightInfo?.line === i + 1}
-                    class:bg-opacity-10={glyphStore.highlightInfo?.line === i + 1}
-                    class:bg-base-200={glyphStore.selectedLine === i + 1} 
+                    class="w-full h-6 transition-colors duration-75 border-l-4"
+
+                    class:border-transparent={!isSelected && !isHovered}
+                    class:border-primary={isSelected || isHovered}
+
+                    class:bg-primary={isHovered}
+                    class:bg-opacity-10={isHovered}
+                    
+                    class:bg-base-200={isSelected && !isHovered} 
                 ></div>
             {/each}
         </div>

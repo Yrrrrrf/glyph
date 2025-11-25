@@ -15,8 +15,7 @@ pub mod constant {
     }
 }
 
-// --- 2. HELPERS (FIX FOR LEXER) ---
-// These were missing in the previous refactor, causing the "unresolved module" error.
+// --- 2. HELPERS ---
 pub mod register {
     pub fn is_valid(s: &str) -> bool {
         matches!(
@@ -73,7 +72,6 @@ pub enum InstructionType {
     FlagControl,
     ConditionalJump,
     Interrupt,
-    StringManipulation,
     ProcessorControl,
     Unknown,
 }
@@ -81,16 +79,15 @@ pub enum InstructionType {
 impl fmt::Display for InstructionType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::DataTransfer => write!(f, "Transferencia de Datos"),
-            Self::Arithmetic => write!(f, "Aritmética"),
-            Self::Logic => write!(f, "Lógica"),
-            Self::ControlTransfer => write!(f, "Transferencia de Control"),
-            Self::FlagControl => write!(f, "Control de Banderas"),
-            Self::ConditionalJump => write!(f, "Salto Condicional"),
-            Self::Interrupt => write!(f, "Interrupción"),
-            Self::StringManipulation => write!(f, "Manipulación de Cadenas"),
-            Self::ProcessorControl => write!(f, "Control del Procesador"),
-            Self::Unknown => write!(f, "Instrucción"),
+            Self::DataTransfer => write!(f, "Data Transfer"),
+            Self::Arithmetic => write!(f, "Arithmetic"),
+            Self::Logic => write!(f, "Logic"),
+            Self::ControlTransfer => write!(f, "Control Transfer"),
+            Self::FlagControl => write!(f, "Flag Control"),
+            Self::ConditionalJump => write!(f, "Conditional Jump"),
+            Self::Interrupt => write!(f, "Interrupt"),
+            Self::ProcessorControl => write!(f, "Processor Control"),
+            Self::Unknown => write!(f, "Instruction"),
         }
     }
 }
@@ -106,9 +103,7 @@ pub fn classify_instruction(mnemonic: &str) -> Option<InstructionType> {
         "JAE" | "JC" | "JGE" | "JNB" | "JNG" | "JNO" | "JZ" | "JNZ" => {
             Some(InstructionType::ConditionalJump)
         }
-        "INTO" | "INT" => Some(InstructionType::Interrupt),
-        "SCASW" => Some(InstructionType::StringManipulation),
-        "HLT" => Some(InstructionType::ProcessorControl),
+        "HLT" | "SCASW" | "INTO" | "INT" => Some(InstructionType::Interrupt),
         _ => None,
     }
 }
@@ -130,12 +125,12 @@ pub enum PunctuationType {
 impl fmt::Display for PunctuationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Comma => write!(f, "Separador"),
-            Self::Colon => write!(f, "Definidor"),
-            Self::LBracket | Self::RBracket => write!(f, "Memoria"),
-            Self::LParen | Self::RParen => write!(f, "Agrupación"),
-            Self::Plus | Self::Minus => write!(f, "Operador"),
-            Self::Dot => write!(f, "Acceso"),
+            Self::Comma => write!(f, "Separator"),
+            Self::Colon => write!(f, "Definition"), // or "Label Definition"
+            Self::LBracket | Self::RBracket => write!(f, "Memory Access"),
+            Self::LParen | Self::RParen => write!(f, "Grouping"),
+            Self::Plus | Self::Minus => write!(f, "Operator"),
+            Self::Dot => write!(f, "Access"),
         }
     }
 }
@@ -167,19 +162,17 @@ impl Token {
 
     pub fn description(&self) -> String {
         match self {
-            // Token::Instruction(type_, _) => type_.to_string(),
             Token::Instruction(type_, _) => format!("{}", type_),
-            // Token::Pseudoinstruction(_) => "Directiva".to_string(),
-            Token::Pseudoinstruction(_) => "Directiva".to_string(),
-            Token::Register(_) => "Registro CPU".to_string(),
+            Token::Pseudoinstruction(_) => "Directive".to_string(),
+            Token::Register(_) => "Register".to_string(),
             Token::Punctuation(p) => format!("{}", p),
-            Token::Symbol(_) => "Identificador".to_string(),
+            Token::Symbol(_) => "Identifier".to_string(),
 
             Token::Constant(c) => match c {
                 constant::Type::String(_) => "String".to_string(),
                 constant::Type::NumberDecimal(_) => "Decimal".to_string(),
                 constant::Type::NumberHex(_, _) => "Hexadecimal".to_string(),
-                constant::Type::NumberBinary(_, _) => "Binario".to_string(),
+                constant::Type::NumberBinary(_, _) => "Binary".to_string(),
                 constant::Type::Char(_) => "Char".to_string(),
             },
             Token::Error(e) => format!("{}", e),
