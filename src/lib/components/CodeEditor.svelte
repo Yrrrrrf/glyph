@@ -162,8 +162,6 @@
                     class:border-transparent={!isSelected && !isHovered}
                     class:border-primary={isSelected || isHovered}
 
-                    class:bg-primary={isHovered}
-                    class:bg-opacity-10={isHovered}
                     
                     class:bg-base-200={isSelected && !isHovered} 
                 ></div>
