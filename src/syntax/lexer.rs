@@ -6,10 +6,6 @@ use chumsky::prelude::*;
 
 type LexerError<'src> = extra::Err<Rich<'src, char>>;
 
-// ... (validate_constants and validate_compounds remain mostly the same) ...
-// ... Copy validate_constants from previous file ...
-// ... Copy validate_compounds from previous file ...
-
 fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<'src>> {
     // 1.1 Hex Validator
     let validate_hex = || {

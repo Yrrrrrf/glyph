@@ -1,7 +1,7 @@
 // src/lib/test.ts
 /// <reference lib="deno.ns" />
 
-import { analyze_assembly, initWasm } from "./wasm";
+import { analyze_assembly, initWasm } from "./wasm.ts";
 import type { JsCompilerResult } from "./types/analysisTypes.ts";
 import type { WasmToken } from "./types/tokenTypes.svelte.ts";
 
@@ -20,7 +20,7 @@ function readFile(filename: string): string {
     return content;
   } catch (error) {
     if (error instanceof Error) {
-      console.error(`❌ Error reading '${filename}': ${error.message}`);
+      console.error(`Error reading '${filename}': ${error.message}`);
     }
     Deno.exit(1);
   }
@@ -69,7 +69,7 @@ function printErrors(errors: string[]): void {
 
   console.log("=== COMPILER ERRORS ===");
   for (const err of errors) {
-    console.log(`❌ ${err}`);
+    console.log(`${err}`);
   }
   console.log();
 }
@@ -100,21 +100,19 @@ async function main(): Promise<void> {
 
   // 3. Status
   if (rawResult.success) {
-    console.log("\n✅ Analysis Successful");
+    console.log("\nAnalysis Successful");
     if (rawResult.program) {
       console.log(
         `🌳 AST Generated with ${rawResult.program.length} statements.`,
       );
     }
   } else {
-    console.log("\n⚠️ Analysis Completed with Errors");
+    console.log("\nAnalysis Completed with Errors");
     Deno.exit(1);
   }
 }
 
-if (import.meta.main) {
-  main().catch((error) => {
-    console.error("\n❌ Fatal error:", error.message);
-    Deno.exit(1);
-  });
-}
+main().catch((error) => {
+  console.error("\natal error:", error.message);
+  Deno.exit(1);
+});
