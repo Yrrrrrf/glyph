@@ -23,8 +23,6 @@ complejos directamente en el navegador.
 
 ## Demo
 
-![Showcase](static/img/showcase.png)
-
 ## Instalación
 
 1. **Clona el repositorio:**
@@ -38,18 +36,27 @@ complejos directamente en el navegador.
    deno task install
    ```
 
-3. **Compile el módulo WebAssembly de Rust:**
+<!-- 3. **Compile el módulo WebAssembly de Rust:**
    ```sh
    ./build-wasm.sh
-   ```
+   ``` -->
 
-4. **Ejecuta la aplicación:**
+3. **Ejecuta la aplicación:**
    ```sh
    deno task dev
    ```
 
 > Esto lanzará la aplicación SvelteKit, con el motor de análisis impulsado por
-> Rust ejecutándose como un módulo de WebAssembly.
+
+## Visualización
+
+### Carda de datos (principal)
+
+![load](static/img/load.png)
+
+### Analizador léxico
+
+![lexer](static/img/lex.png)
 
 ## Licencia
 
