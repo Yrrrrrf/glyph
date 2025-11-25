@@ -11,11 +11,10 @@ mod semantics;
 mod syntax;
 
 use ast::Statement;
-// FIX: Removed Flavor import
+// Removed Flavor import, using validator directly
 use semantics::validator::validate;
 use syntax::{lexer::lexer, parser::parser, tokens::Token};
 
-// ... [Keep JsSymbolRecord, JsLineAnalysis, JsToken structs unchanged] ...
 #[derive(Serialize)]
 pub struct JsSymbolRecord {
     pub name: String,
@@ -53,8 +52,6 @@ pub struct JsCompilerResult {
     pub line_analysis: Vec<JsLineAnalysis>,
 }
 
-// ... [Keep calculate_line & generate_line_analysis unchanged] ...
-
 fn calculate_line(source: &str, offset: usize) -> usize {
     if offset == 0 {
         return 1;
@@ -84,7 +81,7 @@ fn generate_line_analysis(
             if calculate_line(source, *start) == line_num {
                 is_correct = false;
                 error_msg = Some(errors[idx].clone());
-                break;
+                break; // Take the first error that hits this line (usually the root cause)
             }
         }
 
@@ -129,7 +126,6 @@ fn generate_symbol_table(program: &ast::Program) -> Vec<JsSymbolRecord> {
                     segment: current_segment.clone(),
                 });
             }
-            // FIX: Add Constant variant handling
             Statement::Constant { name, value: _ } => {
                 table.push(JsSymbolRecord {
                     name: name.clone(),
@@ -153,8 +149,11 @@ pub fn analyze_full_program(source: &str) -> JsValue {
     let mut all_errors_msg = Vec::new();
     let mut all_error_spans = Vec::new();
 
+    // 1. LEXER ERRORS
     for err in lex_errs {
-        all_errors_msg.push(format!("Lexer: {:?}", err));
+        // Clean up the error message for the UI
+        let msg = format!("[LEX] Unexpected input: {:?}", err.found().unwrap_or(&' '));
+        all_errors_msg.push(msg);
         all_error_spans.push((err.span().start, err.span().end));
     }
 
@@ -180,6 +179,7 @@ pub fn analyze_full_program(source: &str) -> JsValue {
         None
     };
 
+    // If Lexer failed catastrophically, stop here
     if tokens_result.is_none() {
         let lines = generate_line_analysis(source, &all_errors_msg, &all_error_spans);
         return serde_wasm_bindgen::to_value(&JsCompilerResult {
@@ -199,8 +199,10 @@ pub fn analyze_full_program(source: &str) -> JsValue {
 
     let (ast, parse_errs) = parser().parse(token_stream).into_output_errors();
 
+    // 2. PARSER ERRORS
     for err in parse_errs {
-        all_errors_msg.push(format!("Parser: {:?}", err));
+        let msg = format!("[PAR] Invalid syntax or missing token");
+        all_errors_msg.push(msg);
         all_error_spans.push((err.span().start, err.span().end));
     }
 
@@ -210,12 +212,18 @@ pub fn analyze_full_program(source: &str) -> JsValue {
     if let Some(prog) = &program {
         symbol_table = generate_symbol_table(prog);
 
-        // FIX: Remove Flavor, use only 1 arg
         let semantic_errs = validate(prog);
 
+        // 3. SEMANTIC ERRORS
         for err in semantic_errs {
-            all_errors_msg.push(format!("Semantic: {}", err.message));
-            // Assuming semantic errors are global or line 0 for now until spans are added to AST
+            let msg = format!("[SEM] {}", err.message);
+            // TODO: Semantic errors in validator.rs should ideally return spans.
+            // For now, we attach them to line 0 or rely on the UI to show global errors if no line matches.
+            // But if `err.line` is implemented in validator, we use that.
+            // Since our validator currently returns line:0, these might not attach perfectly to lines
+            // unless we upgrade validator.rs to track spans.
+            // For this requests context, we simply add them.
+            all_errors_msg.push(msg);
             all_error_spans.push((0, 0));
         }
     }
