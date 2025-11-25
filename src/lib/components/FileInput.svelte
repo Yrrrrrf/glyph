@@ -1,5 +1,7 @@
 <!-- src/lib/components/FileInput.svelte -->
 <script lang="ts">
+  import * as m from '$lib/paraglide/messages';
+
   let { onFileLoaded } = $props<{
     onFileLoaded: (content: string, filename: string) => Promise<void>;
   }>();
@@ -16,7 +18,7 @@
 
     // Validate
     if (!file.name.toLowerCase().endsWith('.asm')) {
-      error = `Invalid file: "${file.name}" is not a .asm file`;
+      error = m.file_input_invalid_file({ fileName: file.name });
       console.error('❌ FileInput validation failed:', error);
       return;
     }
@@ -30,7 +32,7 @@
         console.log('✅ FileInput: onFileLoaded succeeded');
         input.value = ''; // Reset for re-upload
       } catch (err) {
-        error = err instanceof Error ? err.message : 'Failed';
+        error = err instanceof Error ? err.message : m.file_input_failed();
         console.error('❌ FileInput: onFileLoaded failed:', error);
       }
     };
@@ -40,7 +42,7 @@
 </script>
 
 <div class="form-control w-full max-w-xs">
-  <div class="label-text font-semibold text-center w-full mb-2">Select Assembly File</div>
+  <div class="label-text font-semibold text-center w-full mb-2">{m.file_input_select_assembly_file()}</div>
     
   <input 
     type="file" 

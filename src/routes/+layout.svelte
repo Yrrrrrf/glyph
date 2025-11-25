@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { init } from '$lib/index';
   import '../app.css';
+  import * as m from '$lib/paraglide/messages';
   
   let { children } = $props();
   

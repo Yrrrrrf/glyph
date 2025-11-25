@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
+    import * as m from '$lib/paraglide/messages';
 
     interface ThemeConfig {
         name: string;
@@ -56,7 +57,7 @@
         tabindex="0" 
         role="button" 
         class="btn btn-ghost btn-circle"
-        aria-label="Select theme"
+        aria-label={m.theme_selector_select_theme()}
     >
         <span class="flex items-center justify-center">
             {#if icon}

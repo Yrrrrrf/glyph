@@ -3,6 +3,7 @@
   import { glyphStore } from '$lib/stores/glyphStore.svelte';
     import LanguageSelector from './LanguageSelector.svelte';
   import ThemeSelector from './ThemeSelector.svelte';
+  import * as m from '$lib/paraglide/messages';
 </script>
 
 <header class="bg-base-200 p-4 flex items-center justify-between">
@@ -34,7 +35,7 @@
 
   <!-- Center: Tabs (No disabled logic) -->
   <div class="tabs tabs-boxed tabs-sm">
-    {#each [{id: 'load', label: '📁 Load'}, {id: 'lexer', label: '🔍 Lexer'}, {id: 'parser', label: '🌳 Parser'}] as tab}
+    {#each [{id: 'load', label: m.header_tab_load()}, {id: 'lexer', label: m.header_tab_lexer()}, {id: 'parser', label: m.header_tab_parser()}] as tab}
       <button 
         class="tab {glyphStore.activeTab === tab.id ? 'tab-active' : ''}"
         onclick={() => glyphStore.setActiveTab(tab.id as any)}

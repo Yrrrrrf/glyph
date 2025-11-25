@@ -2,6 +2,7 @@
   import type { WasmToken } from '$lib/types/tokenTypes.svelte';
   import type { HighlightInfo } from '$lib/stores/glyphStore.svelte';
   import { getTokenBadgeClasses } from '$lib/stores/glyphStore.svelte';
+  import * as m from '$lib/paraglide/messages';
 
   let { 
     tokens, 
@@ -53,10 +54,10 @@
   <table class="table table-xs table-pin-rows">
     <thead>
       <tr>
-        <th class="w-12">Ln</th>
+        <th class="w-12">{m.analysis_panel_ln()}</th>
         <!-- <th class="w-20">Span</th> -->
-        <th>Value</th>
-        <th>Category / Detail</th> 
+        <th>{m.analysis_panel_value()}</th>
+        <th>{m.analysis_panel_category_detail()}</th> 
       </tr>
     </thead>
     <tbody>

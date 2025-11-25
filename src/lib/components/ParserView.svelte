@@ -1,6 +1,7 @@
 <!-- src/lib/components/ParserView.svelte -->
 <script lang="ts">
   import { glyphStore } from '$lib/stores/glyphStore.svelte';
+  import * as m from '$lib/paraglide/messages';
 
   // Helper to format hex numbers
   const toHex = (num: number) => {
@@ -13,7 +14,7 @@
   {#if !glyphStore.parserResult}
     <div class="flex flex-col items-center justify-center h-full opacity-50">
       <div class="text-4xl mb-2">⏳</div>
-      <p>No analysis data available. Load a file to begin.</p>
+      <p>{m.parser_view_no_analysis_data()}</p>
     </div>
   {:else}
     
@@ -21,10 +22,10 @@
     <div class="flex-1 flex flex-col min-h-0 border border-base-300 rounded-lg bg-base-100">
       <div class="p-3 bg-base-200 border-b border-base-300 flex justify-between items-center">
         <h3 class="font-bold text-sm flex items-center gap-2">
-          <span>📋</span> Line Analysis
+          <span>📋</span> {m.parser_view_line_analysis()}
         </h3>
         <div class="badge badge-neutral text-xs">
-            {glyphStore.parserResult.lines.filter(l => !l.is_correct).length} Errors
+            {m.parser_view_errors({ count: glyphStore.parserResult.lines.filter(l => !l.is_correct).length })}
         </div>
       </div>
 
@@ -32,10 +33,10 @@
         <table class="table table-xs table-pin-rows w-full">
           <thead>
             <tr>
-              <th class="w-12">Ln</th>
-              <th>Instruction / Source</th>
-              <th class="w-24 text-center">Status</th>
-              <th>Details</th>
+              <th class="w-12">{m.parser_view_ln()}</th>
+              <th>{m.parser_view_instruction_source()}</th>
+              <th class="w-24 text-center">{m.parser_view_status()}</th>
+              <th>{m.parser_view_details()}</th>
             </tr>
           </thead>
           <tbody>
@@ -53,11 +54,11 @@
                 <td class="text-center">
                   {#if line.is_correct}
                     <span class="badge badge-xs badge-success gap-1">
-                      OK
+                      {m.parser_view_ok()}
                     </span>
                   {:else}
                     <span class="badge badge-xs badge-error gap-1 font-bold">
-                      ERR
+                      {m.parser_view_err()}
                     </span>
                   {/if}
                 </td>
@@ -77,7 +78,7 @@
     <div class="flex-1 flex flex-col min-h-0 border border-base-300 rounded-lg bg-base-100">
       <div class="p-3 bg-base-200 border-b border-base-300">
         <h3 class="font-bold text-sm flex items-center gap-2">
-          <span>🔑</span> Symbol Table
+          <span>🔑</span> {m.parser_view_symbol_table()}
         </h3>
       </div>
 
@@ -85,18 +86,18 @@
         <table class="table table-xs table-pin-rows w-full">
           <thead>
             <tr>
-              <th>Symbol Name</th>
-              <th>Type</th>
-              <th>Data Type</th>
-              <th>Offset / Value</th>
-              <th>Segment</th>
+              <th>{m.parser_view_symbol_name()}</th>
+              <th>{m.parser_view_type()}</th>
+              <th>{m.parser_view_data_type()}</th>
+              <th>{m.parser_view_offset_value()}</th>
+              <th>{m.parser_view_segment()}</th>
             </tr>
           </thead>
           <tbody>
             {#if glyphStore.parserResult.symbol_table.length === 0}
                 <tr>
                     <td colspan="5" class="text-center text-base-content/50 py-4">
-                        No symbols defined yet.
+                        {m.parser_view_no_symbols_defined()}
                     </td>
                 </tr>
             {:else}

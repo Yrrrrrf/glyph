@@ -5,6 +5,7 @@
   import CodeEditor from '$lib/components/CodeEditor.svelte';
   import AnalysisPanel from '$lib/components/AnalysisPanel.svelte';
   import ParserView from '$lib/components/ParserView.svelte';
+  import * as m from '$lib/paraglide/messages';
 </script>
 
 <div class="flex flex-col h-screen overflow-hidden">
@@ -20,8 +21,8 @@
     {#if glyphStore.activeTab === 'load'}
       <div class="flex flex-col items-center justify-center h-full gap-6">
         <div class="text-6xl animate-bounce">📁</div>
-        <h2 class="text-2xl font-bold">Load Assembly File</h2>
-        <p class="text-base-content/60">Or switch to the "Lexer" tab to start typing from scratch.</p>
+        <h2 class="text-2xl font-bold">{m.page_load_assembly_file()}</h2>
+        <p class="text-base-content/60">{m.page_switch_to_lexer_tab()}</p>
         <FileInput onFileLoaded={glyphStore.loadFile} />
       </div>
       
@@ -31,10 +32,10 @@
         <div class="flex-1 flex flex-col min-w-0">
           <div class="flex justify-between items-center mb-2">
             <h3 class="text-lg font-semibold flex items-center gap-2">
-                <span>📝</span> Code Editor
+                <span>📝</span> {m.page_code_editor()}
             </h3>
             <span class="text-xs text-base-content/50">
-                {glyphStore.analysisState === 'loading' ? 'Analyzing...' : 'Ready'}
+                {glyphStore.analysisState === 'loading' ? m.page_analyzing() : m.page_ready()}
             </span>
           </div>
           
@@ -50,7 +51,7 @@
         <!-- Analysis Column -->
         <div class="flex-1 flex flex-col min-w-0">
           <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
-            <span>🔍</span> Token Stream
+            <span>🔍</span> {m.page_token_stream()}
           </h3>
           <div class="flex-1 min-h-0">
             <AnalysisPanel
