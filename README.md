@@ -1,41 +1,56 @@
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/Yrrrrrf/some-asm/main/resources/img/static/chart.png" alt="Some Assembly" width="128">
-  <div align="center">Some Assembly</div>
+  <img src="static/img/molecule.png" alt="Glyph Icon" width="128" height="128">
+  <div align="center">Glyph</div>
 </h1>
 
 <div align="center">
 
-[![GitHub: Repo](https://img.shields.io/badge/some--asm-58A6FF?&logo=github)](https://github.com/Yrrrrrf/some-asm)
+[![GitHub: Repo](https://img.shields.io/badge/glyph-58A6FF?&logo=github)](https://github.com/Yrrrrrf/glyph)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
+
+<!-- [![JSR](https://jsr.io/badges/@yrrrrrf/glyph)](https://jsr.io/@yrrrrrf/glyph) -->
+<!-- [![Crates.io](https://img.shields.io/crates/v/glyph.svg?logo=rust)](https://crates.io/crates/glyph) -->
 
 </div>
 
-`some-asm` is a Python library designed to automatically discover and provide an intuitive API to access project files, eliminating the need for hardcoded relative paths.
+> Un framework basado en SvelteKit para construir aplicaciones web con un
+> enfoque en la visualización científica y análisis de datos.
 
-## 🚦 Getting Started
+Glyph es un framework web que aprovecha el poder de SvelteKit en el frontend y
+WebAssembly compilado con Rust en el backend. Está diseñado para proporcionar un
+entorno rico e interactivo para visualizar y analizar conjuntos de datos
+complejos directamente en el navegador.
 
-### Installation
-The preferred installation method is:
-```bash
-# Using uv as package manager
-uv sync
-```
+## Demo
 
-#### Quick Start
-Here's a minimal example to get you started:
-```bash
-# Using uv to run the main script
-uv run src/main.py
-```
+![Showcase](static/img/showcase.png)
 
-![sample image](./resources/img/v001-sample.png)
+## Instalación
 
+1. **Clona el repositorio:**
+   ```sh
+   git clone https://github.com/Yrrrrrf/glyph.git
+   cd glyph
+   ```
 
-## 📄 License
+2. **Instala las dependencias del frontend:**
+   ```sh
+   deno task install
+   ```
 
-This project is licensed under the **MIT License**. See the [LICENSE](./LICENSE) file for details.
+3. **Compile el módulo WebAssembly de Rust:**
+   ```sh
+   ./build-wasm.sh
+   ```
 
-But it also uses [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) which have their own license: [`GPLv3 License`](https://www.riverbankcomputing.com/static/Docs/PyQt6/introduction.html#license)
+4. **Ejecuta la aplicación:**
+   ```sh
+   deno task dev
+   ```
 
-## Attributions
-This project uses some icons from [flaticon.com](https://www.flaticon.com/). The individual attributions are in the [attributions.md](./resources/attributions.md) file.
+> Esto lanzará la aplicación SvelteKit, con el motor de análisis impulsado por
+> Rust ejecutándose como un módulo de WebAssembly.
+
+## Licencia
+
+Este proyecto está licenciado bajo la [**Licencia MIT**](LICENSE).

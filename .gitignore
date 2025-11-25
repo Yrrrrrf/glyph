@@ -1,18 +1,22 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+# all that start with a dot except .gitignore
+.*
+!.gitignore
 
-# Virtual environments
-.venv
+# Web-generated files
+node_modules
+/build
 
+# Rust-generated files
+/target/
 
-**/**.com
+temp/
 
-.ruff_cache
-.pytest_cache
+# lock files
+**.lock
 
-# **.lock
+# project specific ignores
+x8086/
+repos/
+
+# Paraglide
+src/lib/paraglide
