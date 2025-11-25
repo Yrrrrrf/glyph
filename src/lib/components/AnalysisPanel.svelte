@@ -32,7 +32,7 @@
   }
 
   function formatDetail(detail: string): string {
-    // Regex to extract inner part of Enum: "Constant(NumberHex(...))" -> "NumberHex"
+    // Regex to extract inner part of Enum: "Constant(Hex(...))" -> "Hex"
     // Or just clean up the Rust debug output slightly
     return detail.replace(/([A-Z][a-z]+)\((.*)\)/, '$1: $2');
   }

@@ -11,11 +11,9 @@ mod semantics;
 mod syntax;
 
 use semantics::validator::{Flavor, validate};
-use syntax::{
-    lexer::lexer,
-    parser::parser,
-    tokens::{Token, constant},
-};
+use syntax::{parser::parser, tokens::Token};
+
+use crate::syntax::lexer;
 
 #[derive(Serialize)]
 pub struct JsCompilerResult {
@@ -27,62 +25,46 @@ pub struct JsCompilerResult {
 
 #[derive(Serialize)]
 pub struct JsToken {
-    pub element: String,  // The "Canonical" value (e.g., "MOV")
-    pub category: String, // The display category
-    pub detail: String,   // The debug detail
+    pub element: String,  // The Exact Slice from Source Code
+    pub category: String, // E.g. "Instruction"
+    pub detail: String,   // E.g. "Aritmética"
     pub line: usize,
-    // --- NEW SPAN FIELDS ---
-    pub start: usize, // Index where token begins
-    pub end: usize,   // Index where token ends
-}
-
-// (Keep get_token_details exactly as it was in the previous step)
-fn get_token_details(token: &Token) -> (String, String) {
-    match token {
-        Token::Instruction(s) => ("Instruction".to_string(), s.clone()),
-        Token::Pseudoinstruction(s) => ("Pseudoinstruction".to_string(), s.clone()),
-        Token::Register(s) => ("Register".to_string(), s.clone()),
-        Token::Symbol(s) => ("Symbol".to_string(), s.clone()),
-        Token::Constant(c) => match c {
-            constant::Type::String(s) => ("Constant (String)".to_string(), format!("\"{}\"", s)),
-            constant::Type::NumberDecimal(v) => ("Constant (Dec)".to_string(), v.to_string()),
-            constant::Type::NumberHex(_, raw) => ("Constant (Hex)".to_string(), raw.clone()),
-            constant::Type::NumberBinary(_, raw) => ("Constant (Bin)".to_string(), raw.clone()),
-            constant::Type::Char(c) => ("Constant (Char)".to_string(), format!("'{}'", c)),
-        },
-        Token::Error(s) => ("Elemento inválido".to_string(), s.clone()),
-        _ => ("Separator".to_string(), token.to_string()),
-    }
+    pub start: usize, 
+    pub end: usize,
 }
 
 #[wasm_bindgen]
 pub fn analyze_full_program(source: &str) -> JsValue {
     let len = source.len();
-    let (tokens_result, lex_errs) = lexer().parse(source).into_output_errors();
+    let (tokens_result, lex_errs) = lexer::lexer().parse(source).into_output_errors();
 
     let mut js_errors = Vec::new();
-
     for err in lex_errs {
         js_errors.push(format!("Lexing Error: {:?}", err));
     }
 
-    // MAP TOKENS WITH SPANS
+    // --- ENHANCED TOKEN GENERATION ---
     let js_tokens = if let Some(tokens) = &tokens_result {
         Some(
             tokens
                 .iter()
-                .map(|(t, span)| {
-                    // Calculate line manually (or you could map spans to lines later in JS)
+                .map(|(token, span)| {
+                    // 1. Get Line Number (Optimized? Not yet, but functional)
                     let line = source[..span.start].lines().count().max(1);
 
-                    let (category, element) = get_token_details(t);
+                    // 2. Extract Raw Content using Span
+                    // This gives the exact text the user typed (e.g. "mOv", "0afH")
+                    let raw_element = &source[span.start..span.end];
+
+                    // 3. Use Token Methods for Metadata
+                    let category = token.category();
+                    let detail = token.description();
 
                     JsToken {
-                        element,
+                        element: raw_element.to_string(),
                         category,
-                        detail: format!("{:?}", t),
+                        detail,
                         line,
-                        // Extract precise indices from Chumsky Span
                         start: span.start,
                         end: span.end,
                     }
@@ -99,43 +81,34 @@ pub fn analyze_full_program(source: &str) -> JsValue {
             tokens: None,
             errors: js_errors,
             program: None,
-        })
-        .unwrap();
+        }).unwrap();
     }
 
     let tokens = tokens_result.unwrap();
 
-    // Parsing Logic (unchanged)
+    // ... (Parsing logic remains, but we need to update parser.rs first) ...
+    // Note: If you want to skip parsing while testing just the Lexer, you can comment this out temporarily.
+    // For now, let's assume Parser updates are applied (Step 4).
+    
     let token_stream = chumsky::input::Stream::from_iter(tokens.into_iter())
         .map(SimpleSpan::from(len..len), |(t, s)| (t, s));
 
     let (ast, parse_errs) = parser().parse(token_stream).into_output_errors();
 
     for err in parse_errs {
-        js_errors.push(format!(
-            "Parse Error: Expected {:?}, found {:?}",
-            err.expected().collect::<Vec<_>>(),
-            err.found()
-        ));
+        js_errors.push(format!("Parse Error: {:?}", err));
     }
 
-    if ast.is_none() {
-        return serde_wasm_bindgen::to_value(&JsCompilerResult {
-            success: false,
-            tokens: js_tokens,
-            errors: js_errors,
-            program: None,
-        })
-        .unwrap();
-    }
-
-    let program = ast.unwrap();
-
-    let strict_mode = true;
-    let flavor = Flavor::Masm;
-    let semantic_errs = validate(&program, flavor, strict_mode);
-    for err in semantic_errs {
-        js_errors.push(format!("Semantic Error: {}", err.message));
+    // ... Validator ...
+    let program = ast.clone();
+    
+    // Quick Semantic Check (Simplified)
+    if let Some(prog) = &program {
+         let flavor = Flavor::Masm;
+         let semantic_errs = validate(prog, flavor, true);
+         for err in semantic_errs {
+             js_errors.push(format!("Semantic Error: {}", err.message));
+         }
     }
 
     let success = js_errors.is_empty();
@@ -144,12 +117,10 @@ pub fn analyze_full_program(source: &str) -> JsValue {
         success,
         tokens: js_tokens,
         errors: js_errors,
-        program: Some(program),
-    })
-    .unwrap()
+        program,
+    }).unwrap()
 }
 
-// Keep legacy export
 #[wasm_bindgen]
 pub fn analyze_assembly(source: &str) -> JsValue {
     analyze_full_program(source)

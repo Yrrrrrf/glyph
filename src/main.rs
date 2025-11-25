@@ -9,11 +9,7 @@ use chumsky::prelude::*;
 use std::env;
 use std::fs;
 
-use semantics::validator::{Flavor, validate};
-use syntax::tokens::{Token, constant};
-use syntax::{lexer::lexer, parser::parser};
-
-// ... (get_filename and read_file match your previous version) ...
+use syntax::{lexer::lexer, tokens::Token};
 
 fn get_filename() -> String {
     let args: Vec<String> = env::args().collect();
@@ -29,12 +25,9 @@ fn read_file(filename: &str) -> String {
     })
 }
 
-// FIX: Correct line number calculation
 fn get_line_number(source: &str, offset: usize) -> usize {
     let slice = &source[..offset];
     let count = slice.lines().count();
-    // If the previous slice ends strictly with \n, .lines() doesn't count the new empty line
-    // we are currently on.
     if slice.ends_with('\n') {
         count + 1
     } else {
@@ -46,39 +39,28 @@ fn get_line_number(source: &str, offset: usize) -> usize {
 fn print_lexer_output(source: &str, tokens: &[(Token, SimpleSpan)]) {
     println!("=== LEXER OUTPUT ===");
     println!(
-        "{:<10} | {:<22} | {:<30} | {}",
-        "Line", "Category", "Value", "Detail"
+        "{:<4} | {:<48} | {:<24}",
+        "Line", "Category", "Value (Source Slice)"
     );
-    println!("{}", "-".repeat(100));
+    println!("{}", "-".repeat(90));
 
     for (token, span) in tokens {
         let line = get_line_number(source, span.start);
+        
+        // 1. Get exact text from source using span
+        let value_str = &source[span.start..span.end];
+        
+        // 2. Get Metadata from Token methods
+        let category = token.category();
+        let description = token.description();
 
-        let (category, value_str) = match token {
-            Token::Instruction(s) => ("Instruction", s.clone()),
-            Token::Pseudoinstruction(s) => ("Pseudoinstruction", s.clone()),
-            Token::Register(s) => ("Register", s.clone()),
-            Token::Symbol(s) => ("Symbol", s.clone()),
-            Token::Constant(c) => match c {
-                constant::Type::String(s) => ("Constant (String)", format!("\"{}\"", s)),
-                constant::Type::NumberDecimal(v) => ("Constant (Dec)", v.to_string()),
-                constant::Type::NumberHex(_, raw) => ("Constant (Hex)", raw.clone()),
-                constant::Type::NumberBinary(_, raw) => ("Constant (Bin)", raw.clone()),
-                constant::Type::Char(c) => ("Constant (Char)", format!("'{}'", c)),
-            },
-            Token::Error(s) => ("Elemento inválido", s.clone()),
-            _ => ("Separator", token.to_string()),
-        };
-
-        if category == "Elemento inválido" {
+        // 3. Print
+        if let Token::Error(_) = token {
             println!(
-                "{:<10} | \x1b[31m{:<22}\x1b[0m | {:<30} | {:?}",
-                line, category, value_str, token
-            );
+                "{line:<4} | \x1b[31m{description:<48}\x1b[0m | {value_str:<24}");
         } else {
             println!(
-                "{:<10} | {:<22} | {:<30} | {:?}",
-                line, category, value_str, token
+                "{line:<4} | {category:<16}{description:<32} | {value_str:<24}",
             );
         }
     }
@@ -88,7 +70,6 @@ fn print_lexer_output(source: &str, tokens: &[(Token, SimpleSpan)]) {
 fn main() {
     let filename = get_filename();
     let code = read_file(&filename);
-    let len = code.len();
 
     println!("=== Processing: {} ===\n", filename);
 
@@ -114,14 +95,9 @@ fn main() {
         println!();
     }
 
-    if tokens.is_none() {
+    if let Some(tokens) = tokens {
+        print_lexer_output(&code, &tokens);
+    } else {
         println!("❌ Fatal Lexer Error: No tokens produced.");
-        return;
     }
-    let tokens = tokens.unwrap();
-
-    print_lexer_output(&code, &tokens);
-
-    // ... (Parser logic remains the same) ...
-    // (If you are not using parser output yet for phase 1, you can leave it or comment it out)
 }
