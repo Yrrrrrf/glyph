@@ -29,7 +29,7 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
             .map(|s: &str| {
                 let chars: Vec<char> = s.chars().collect();
                 if chars.len() > 1 && chars[0] == '0' && chars[1].is_ascii_digit() {
-                    Token::Error(format!("{}h (Invalid: Unnecessary leading zero)", s))
+                    Token::Error(format!("Unnecessary leading zero"))
                 } else {
                     Token::Constant(constant::Type::NumberHex(
                         u64::from_str_radix(s, 16).unwrap_or(0),
@@ -46,11 +46,7 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
             .then_ignore(just('b').or(just('B')))
             .map(|s: &str| {
                 if s.len() != 8 && s.len() != 16 {
-                    Token::Error(format!(
-                        "{}b (Invalid length: {}, expected 8 or 16)",
-                        s,
-                        s.len()
-                    ))
+                    Token::Error(format!("Invalid length: {}, expected 8 or 16", s.len()))
                 } else {
                     Token::Constant(constant::Type::NumberBinary(
                         u64::from_str_radix(s, 2).unwrap_or(0),
@@ -76,7 +72,7 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
                 if closed {
                     Token::Constant(constant::Type::String(s))
                 } else {
-                    Token::Error(format!("\"{} (String missing closing quote)", s))
+                    Token::Error(format!("String missing closing quote"))
                 }
             })
     };
@@ -91,7 +87,7 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
                 if closed {
                     Token::Constant(constant::Type::String(s))
                 } else {
-                    Token::Error(format!("'{} (Char literal missing closing quote)", s))
+                    Token::Error(format!("Char literal missing closing quote"))
                 }
             })
     };
