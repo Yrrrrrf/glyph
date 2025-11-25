@@ -1,25 +1,25 @@
 // src/lib/types/tokenTypes.svelte.ts
 
 export interface WasmToken {
-  element: string;
-  category: string;
-  detail: string;
+  element: string; // The raw slice from source (e.g. "MOV", "0afH")
+  category: string; // The high-level category (e.g. "Instruction", "Register")
+  detail: string; // The specific type description (e.g. "Data Transfer", "Binary")
   line: number;
-  // New Span Fields
   start: number;
   end: number;
 }
 
+// Optional: You can refine this union type if you want strict checking in TS components
 export type TokenCategory =
-  | "instruction"
-  | "directive"
-  | "register"
-  | "symbol"
-  | "constant"
-  | "punctuation"
-  | "invalid";
+  | "Instruction"
+  | "Directive"
+  | "Register"
+  | "Constant"
+  | "Symbol"
+  | "Punctuation"
+  | "Error";
 
-// (Keep the Phase 2 structures as they were)
+// (Keep the Phase 2 structures if you are using them in ParserView)
 export interface SymbolRecord {
   name: string;
   type_: "Variable" | "Label" | "Constant";

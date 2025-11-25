@@ -1,6 +1,6 @@
 // src/syntax/parser.rs
 use crate::ast::{Operand, Program, Statement};
-use crate::syntax::tokens::{Token, constant, PunctuationType};
+use crate::syntax::tokens::{PunctuationType, Token, constant};
 use chumsky::input::ValueInput;
 use chumsky::prelude::*;
 
@@ -36,7 +36,12 @@ where
     // 1. Instruction: Matches ANY Token::Instruction(type, string)
     // We ignore the Type (first field) for parsing logic, we just want the Mnemonic string
     let instruction = select! { Token::Instruction(_, op) => op }
-        .then(operand.clone().separated_by(just(Token::Punctuation(PunctuationType::Comma))).collect())
+        .then(
+            operand
+                .clone()
+                .separated_by(just(Token::Punctuation(PunctuationType::Comma)))
+                .collect(),
+        )
         .map(|(op, ops)| Statement::Instruction {
             mnemonic: op,
             operands: ops,

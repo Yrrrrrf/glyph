@@ -1,8 +1,8 @@
 // src/syntax/lexer.rs
-use crate::syntax::tokens::{Token, constant, classify_instruction, PunctuationType};
-use chumsky::prelude::*;
 use crate::syntax::tokens::pseudoinstruction;
 use crate::syntax::tokens::register;
+use crate::syntax::tokens::{PunctuationType, Token, classify_instruction, constant};
+use chumsky::prelude::*;
 
 type LexerError<'src> = extra::Err<Rich<'src, char>>;
 
@@ -18,7 +18,10 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
             .then_ignore(just('h').or(just('H')))
             .try_map(|s: &str, span| {
                 if s.chars().next().map_or(false, |c| c.is_ascii_alphabetic()) {
-                    Err(Rich::custom(span, "Hex literal must start with a decimal digit (0-9)"))
+                    Err(Rich::custom(
+                        span,
+                        "Hex literal must start with a decimal digit (0-9)",
+                    ))
                 } else {
                     Ok(s)
                 }
@@ -43,7 +46,11 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
             .then_ignore(just('b').or(just('B')))
             .map(|s: &str| {
                 if s.len() != 8 && s.len() != 16 {
-                    Token::Error(format!("{}b (Invalid length: {}, expected 8 or 16)", s, s.len()))
+                    Token::Error(format!(
+                        "{}b (Invalid length: {}, expected 8 or 16)",
+                        s,
+                        s.len()
+                    ))
                 } else {
                     Token::Constant(constant::Type::NumberBinary(
                         u64::from_str_radix(s, 2).unwrap_or(0),
@@ -66,31 +73,51 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
             .ignore_then(content)
             .then(just('"').map(|_| true).or(empty().map(|_| false)))
             .map(|(s, closed)| {
-                if closed { Token::Constant(constant::Type::String(s)) } 
-                else { Token::Error(format!("\"{} (String missing closing quote)", s)) }
+                if closed {
+                    Token::Constant(constant::Type::String(s))
+                } else {
+                    Token::Error(format!("\"{} (String missing closing quote)", s))
+                }
             })
     };
-    
+
     // 1.5 Char
     let validate_char = || {
-         let content = none_of("\'\r\n").repeated().collect::<String>();
+        let content = none_of("\'\r\n").repeated().collect::<String>();
         just('\'')
             .ignore_then(content)
             .then(just('\'').map(|_| true).or(empty().map(|_| false)))
             .map(|(s, closed)| {
-                if closed { Token::Constant(constant::Type::String(s)) } 
-                else { Token::Error(format!("'{} (Char literal missing closing quote)", s)) }
+                if closed {
+                    Token::Constant(constant::Type::String(s))
+                } else {
+                    Token::Error(format!("'{} (Char literal missing closing quote)", s))
+                }
             })
     };
 
-    choice((validate_hex(), validate_bin(), validate_dec(), validate_string(), validate_char()))
+    choice((
+        validate_hex(),
+        validate_bin(),
+        validate_dec(),
+        validate_string(),
+        validate_char(),
+    ))
 }
 
 fn validate_compounds<'src>() -> impl Parser<'src, &'src str, Token, LexerError<'src>> {
     let case_ignore = |kwd: &'static str| {
-        just('.').or_not().then(text::ascii::ident()).to_slice().try_map(move |s: &str, span| {
-            if s.eq_ignore_ascii_case(kwd) { Ok(s) } else { Err(Rich::custom(span, "Case mismatch")) }
-        })
+        just('.')
+            .or_not()
+            .then(text::ascii::ident())
+            .to_slice()
+            .try_map(move |s: &str, span| {
+                if s.eq_ignore_ascii_case(kwd) {
+                    Ok(s)
+                } else {
+                    Err(Rich::custom(span, "Case mismatch"))
+                }
+            })
     };
 
     let mk_compound = move |first: &'static str, second: &'static str| {
@@ -107,7 +134,11 @@ fn validate_compounds<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
 
     let dups = text::ascii::ident()
         .try_map(|s: &str, span| {
-             if s.eq_ignore_ascii_case("dup") { Ok(s) } else { Err(Rich::custom(span, "not dup")) }
+            if s.eq_ignore_ascii_case("dup") {
+                Ok(s)
+            } else {
+                Err(Rich::custom(span, "not dup"))
+            }
         })
         .then(text::whitespace().or_not())
         .then(just('('))
@@ -179,7 +210,10 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<(Token, SimpleSpan)>, L
 
     // ... (rest of function: comments, whitespace, etc. remains same) ...
     let comment = just(';').then(any().and_is(text::newline().not()).repeated());
-    let whitespace = any().filter(|c: &char| c.is_whitespace()).repeated().at_least(1);
+    let whitespace = any()
+        .filter(|c: &char| c.is_whitespace())
+        .repeated()
+        .at_least(1);
     let ignored = choice((whitespace.ignored(), comment.ignored())).repeated();
 
     ignored

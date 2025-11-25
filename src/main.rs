@@ -46,22 +46,19 @@ fn print_lexer_output(source: &str, tokens: &[(Token, SimpleSpan)]) {
 
     for (token, span) in tokens {
         let line = get_line_number(source, span.start);
-        
+
         // 1. Get exact text from source using span
         let value_str = &source[span.start..span.end];
-        
+
         // 2. Get Metadata from Token methods
         let category = token.category();
         let description = token.description();
 
         // 3. Print
         if let Token::Error(_) = token {
-            println!(
-                "{line:<4} | \x1b[31m{description:<48}\x1b[0m | {value_str:<24}");
+            println!("{line:<4} | \x1b[31m{description:<48}\x1b[0m | {value_str:<24}");
         } else {
-            println!(
-                "{line:<4} | {category:<16}{description:<32} | {value_str:<24}",
-            );
+            println!("{line:<4} | {category:<16}{description:<32} | {value_str:<24}",);
         }
     }
     println!();

@@ -7,7 +7,7 @@ pub mod constant {
     use serde::Serialize;
     #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
     pub enum Type {
-        String(String), 
+        String(String),
         NumberDecimal(u64),
         NumberHex(u64, String),
         NumberBinary(u64, String),
@@ -21,8 +21,25 @@ pub mod register {
     pub fn is_valid(s: &str) -> bool {
         matches!(
             s,
-            "AX" | "BX" | "CX" | "DX" | "AL" | "AH" | "BL" | "BH" | "CL" | "CH" | "DL" | "DH" | 
-            "SI" | "DI" | "SP" | "BP" | "CS" | "DS" | "SS" | "ES"
+            "AX" | "BX"
+                | "CX"
+                | "DX"
+                | "AL"
+                | "AH"
+                | "BL"
+                | "BH"
+                | "CL"
+                | "CH"
+                | "DL"
+                | "DH"
+                | "SI"
+                | "DI"
+                | "SP"
+                | "BP"
+                | "CS"
+                | "DS"
+                | "SS"
+                | "ES"
         )
     }
 }
@@ -31,8 +48,17 @@ pub mod pseudoinstruction {
     pub fn is_reserved(s: &str) -> bool {
         matches!(
             s,
-            "DB" | "DW" | "DD" | "EQU" | "ORG" | "OFFSET" | "ENDS" | "SEGMENT" | 
-            ".CODE" | ".DATA" | ".STACK" | ".MODEL"
+            "DB" | "DW"
+                | "DD"
+                | "EQU"
+                | "ORG"
+                | "OFFSET"
+                | "ENDS"
+                | "SEGMENT"
+                | ".CODE"
+                | ".DATA"
+                | ".STACK"
+                | ".MODEL"
         )
     }
 }
@@ -40,16 +66,16 @@ pub mod pseudoinstruction {
 // --- 3. INSTRUCTIONS ---
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum InstructionType {
-    DataTransfer,      
-    Arithmetic,        
-    Logic,             
-    ControlTransfer,   
-    FlagControl,       
-    ConditionalJump,   
-    Interrupt,         
+    DataTransfer,
+    Arithmetic,
+    Logic,
+    ControlTransfer,
+    FlagControl,
+    ConditionalJump,
+    Interrupt,
     StringManipulation,
-    ProcessorControl,  
-    Unknown,           
+    ProcessorControl,
+    Unknown,
 }
 
 impl fmt::Display for InstructionType {
@@ -72,29 +98,33 @@ impl fmt::Display for InstructionType {
 pub fn classify_instruction(mnemonic: &str) -> Option<InstructionType> {
     match mnemonic {
         "POP" | "LES" | "LDS" | "MOV" | "XCHG" => Some(InstructionType::DataTransfer),
-        "DEC" | "IDIV" | "IMUL" | "ADC" | "CMP" | "AAD" | "ADD" | "SUB" | "INC" => Some(InstructionType::Arithmetic),
-        "AAA" => Some(InstructionType::Arithmetic), 
+        "DEC" | "IDIV" | "IMUL" | "ADC" | "CMP" | "AAD" | "ADD" | "SUB" | "INC" => {
+            Some(InstructionType::Arithmetic)
+        }
+        "AAA" => Some(InstructionType::Arithmetic),
         "STC" | "CLC" => Some(InstructionType::FlagControl),
-        "JAE" | "JC" | "JGE" | "JNB" | "JNG" | "JNO" | "JZ" | "JNZ" => Some(InstructionType::ConditionalJump),
+        "JAE" | "JC" | "JGE" | "JNB" | "JNG" | "JNO" | "JZ" | "JNZ" => {
+            Some(InstructionType::ConditionalJump)
+        }
         "INTO" | "INT" => Some(InstructionType::Interrupt),
         "SCASW" => Some(InstructionType::StringManipulation),
         "HLT" => Some(InstructionType::ProcessorControl),
-        _ => None, 
+        _ => None,
     }
 }
 
 // --- 4. PUNCTUATION ---
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum PunctuationType {
-    Comma,      
-    Colon,      
-    LBracket,   
-    RBracket,   
-    LParen,     
-    RParen,     
-    Plus,       
-    Minus,      
-    Dot,        
+    Comma,
+    Colon,
+    LBracket,
+    RBracket,
+    LParen,
+    RParen,
+    Plus,
+    Minus,
+    Dot,
 }
 
 impl fmt::Display for PunctuationType {
@@ -113,11 +143,11 @@ impl fmt::Display for PunctuationType {
 // --- 5. MAIN TOKEN ENUM ---
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum Token {
-    Instruction(InstructionType, String), 
-    Pseudoinstruction(String), 
-    Register(String),          
-    Constant(constant::Type),  
-    Symbol(String),            
+    Instruction(InstructionType, String),
+    Pseudoinstruction(String),
+    Register(String),
+    Constant(constant::Type),
+    Symbol(String),
     Punctuation(PunctuationType),
     Error(String),
 }
@@ -126,7 +156,7 @@ impl Token {
     pub fn category(&self) -> String {
         match self {
             Token::Instruction(_, _) => "Instruction".to_string(),
-            Token::Pseudoinstruction(_) => "Directive".to_string(), 
+            Token::Pseudoinstruction(_) => "Directive".to_string(),
             Token::Register(_) => "Register".to_string(),
             Token::Constant(_) => "Constant".to_string(),
             Token::Symbol(_) => "Symbol".to_string(),
@@ -144,7 +174,7 @@ impl Token {
             Token::Register(_) => "Registro CPU".to_string(),
             Token::Punctuation(p) => format!("{}", p),
             Token::Symbol(_) => "Identificador".to_string(),
-            
+
             Token::Constant(c) => match c {
                 constant::Type::String(_) => "String".to_string(),
                 constant::Type::NumberDecimal(_) => "Decimal".to_string(),

@@ -6,3 +6,7 @@ export async function init(): Promise<void> {
   // todo: Load other possible initial data here!
   // * :D
 }
+
+// * Re-export types for easier consumption in +page.svelte or other layouts
+export type * from "./types/analysisTypes";
+export type * from "./types/tokenTypes.svelte";

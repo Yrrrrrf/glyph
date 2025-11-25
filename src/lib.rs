@@ -11,9 +11,7 @@ mod semantics;
 mod syntax;
 
 use semantics::validator::{Flavor, validate};
-use syntax::{parser::parser, tokens::Token};
-
-use crate::syntax::lexer;
+use syntax::{lexer::lexer, parser::parser, tokens::Token};
 
 #[derive(Serialize)]
 pub struct JsCompilerResult {
@@ -29,14 +27,29 @@ pub struct JsToken {
     pub category: String, // E.g. "Instruction"
     pub detail: String,   // E.g. "Aritmética"
     pub line: usize,
-    pub start: usize, 
+    pub start: usize,
     pub end: usize,
+}
+
+// Helper function to calculate line number correctly
+fn calculate_line(source: &str, offset: usize) -> usize {
+    if offset == 0 {
+        return 1;
+    }
+    let slice = &source[..offset];
+    let count = slice.lines().count();
+    if slice.ends_with('\n') {
+        count + 1
+    } else {
+        count
+    }
+    .max(1)
 }
 
 #[wasm_bindgen]
 pub fn analyze_full_program(source: &str) -> JsValue {
     let len = source.len();
-    let (tokens_result, lex_errs) = lexer::lexer().parse(source).into_output_errors();
+    let (tokens_result, lex_errs) = lexer().parse(source).into_output_errors();
 
     let mut js_errors = Vec::new();
     for err in lex_errs {
@@ -49,11 +62,10 @@ pub fn analyze_full_program(source: &str) -> JsValue {
             tokens
                 .iter()
                 .map(|(token, span)| {
-                    // 1. Get Line Number (Optimized? Not yet, but functional)
-                    let line = source[..span.start].lines().count().max(1);
+                    // 1. Get Exact Line Number using the robust logic
+                    let line = calculate_line(source, span.start);
 
                     // 2. Extract Raw Content using Span
-                    // This gives the exact text the user typed (e.g. "mOv", "0afH")
                     let raw_element = &source[span.start..span.end];
 
                     // 3. Use Token Methods for Metadata
@@ -81,15 +93,13 @@ pub fn analyze_full_program(source: &str) -> JsValue {
             tokens: None,
             errors: js_errors,
             program: None,
-        }).unwrap();
+        })
+        .unwrap();
     }
 
     let tokens = tokens_result.unwrap();
 
-    // ... (Parsing logic remains, but we need to update parser.rs first) ...
-    // Note: If you want to skip parsing while testing just the Lexer, you can comment this out temporarily.
-    // For now, let's assume Parser updates are applied (Step 4).
-    
+    // Check Parser
     let token_stream = chumsky::input::Stream::from_iter(tokens.into_iter())
         .map(SimpleSpan::from(len..len), |(t, s)| (t, s));
 
@@ -99,16 +109,15 @@ pub fn analyze_full_program(source: &str) -> JsValue {
         js_errors.push(format!("Parse Error: {:?}", err));
     }
 
-    // ... Validator ...
     let program = ast.clone();
-    
-    // Quick Semantic Check (Simplified)
+
+    // Semantic Check
     if let Some(prog) = &program {
-         let flavor = Flavor::Masm;
-         let semantic_errs = validate(prog, flavor, true);
-         for err in semantic_errs {
-             js_errors.push(format!("Semantic Error: {}", err.message));
-         }
+        let flavor = Flavor::Masm;
+        let semantic_errs = validate(prog, flavor, true);
+        for err in semantic_errs {
+            js_errors.push(format!("Semantic Error: {}", err.message));
+        }
     }
 
     let success = js_errors.is_empty();
@@ -118,7 +127,8 @@ pub fn analyze_full_program(source: &str) -> JsValue {
         tokens: js_tokens,
         errors: js_errors,
         program,
-    }).unwrap()
+    })
+    .unwrap()
 }
 
 #[wasm_bindgen]

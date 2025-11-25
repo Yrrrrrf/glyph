@@ -1,10 +1,7 @@
 // src/lib/test.ts
-
-// this line specifies that we want to use Deno's standard library types
-// ,ns extention
 /// <reference lib="deno.ns" />
 
-import { analyze_assembly, initWasm } from "./wasm.ts";
+import { analyze_assembly, initWasm } from "./wasm";
 import type { JsCompilerResult } from "./types/analysisTypes.ts";
 import type { WasmToken } from "./types/tokenTypes.svelte.ts";
 
@@ -31,44 +28,37 @@ function readFile(filename: string): string {
 
 function printLexerOutput(
   tokens: WasmToken[] | null,
-  sourceCode: string,
 ): void {
   console.log("=== LEXER OUTPUT ===");
+
+  // Matches Rust: "{:<4} | {:<48} | {:<24}"
+  console.log(
+    "Line".padEnd(4) + " | " +
+      "Category".padEnd(48) + " | " +
+      "Value (Source Slice)",
+  );
+  console.log("-".repeat(90));
 
   if (!tokens || tokens.length === 0) {
     console.log("(No tokens produced)\n");
     return;
   }
 
-  // Header with new columns
-  console.log(
-    "Line".padEnd(5) + " | " +
-      "Span".padEnd(9) + " | " + // Start-End
-      "Category".padEnd(20) + " | " +
-      "Raw Text".padEnd(15) + " | " +
-      "Detail",
-  );
-  console.log("-".repeat(100));
-
   for (const token of tokens) {
-    const lineStr = String(token.line).padEnd(5);
-    // Create span string: "0-5"
-    const spanStr = `${token.start}-${token.end}`.padEnd(9);
-    const catStr = token.category.padEnd(20);
+    const line = String(token.line).padEnd(4);
+    // In JS/Wasm result: token.element is the Slice, token.detail is the Description
+    const val = token.element.padEnd(24);
 
-    // Slice the original text to prove we have the correct indices
-    const actualText = sourceCode.slice(token.start, token.end).padEnd(15);
-
-    // Color logic
-    let output =
-      `${lineStr} | ${spanStr} | ${catStr} | ${actualText} | ${token.detail}`;
-
-    if (
-      token.category.includes("Error") || token.category.includes("invalid")
-    ) {
-      console.log(`\x1b[31m${output}\x1b[0m`);
+    // Check for Error category
+    if (token.category === "Error" || token.category.includes("Invalid")) {
+      // Rust: println!("{line:<4} | \x1b[31m{description:<48}\x1b[0m | {value_str:<24}");
+      const desc = token.detail.padEnd(48);
+      console.log(`${line} | \x1b[31m${desc}\x1b[0m | ${val}`);
     } else {
-      console.log(output);
+      // Rust: println!("{line:<4} | {category:<16}{description:<32} | {value_str:<24}");
+      const cat = token.category.padEnd(16);
+      const desc = token.detail.padEnd(32);
+      console.log(`${line} | ${cat}${desc} | ${val}`);
     }
   }
   console.log();
@@ -97,14 +87,15 @@ async function main(): Promise<void> {
 
   console.log(`=== Processing: ${filename} ===\n`);
 
-  // CAST the result to our known interface
+  // Analyze
   const rawResult = analyze_assembly(code) as unknown as JsCompilerResult;
 
-  // 1. Print Lexer Output (if tokens exist)
-  // Pass 'code' here so we can verify the slicing
-  printLexerOutput(rawResult.tokens, code);
+  // 1. Print Lexer Output
+  // Note: We don't need to pass 'code' anymore for slicing,
+  // because the Rust side now does the slicing for us in token.element!
+  printLexerOutput(rawResult.tokens);
 
-  // 2. Print Errors (Lexer, Parser, or Validator errors)
+  // 2. Print Errors
   printErrors(rawResult.errors);
 
   // 3. Status
