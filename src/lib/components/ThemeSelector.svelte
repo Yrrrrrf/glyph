@@ -1,66 +1,94 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+
     interface ThemeConfig {
         name: string;
         icon: string;
         description?: string;
     }
 
-    // todo: Find a way to handle this dynamically from tailwind config or daisyui
+    // Props: Accept an optional icon snippet
+    let { icon }: { icon?: Snippet } = $props();
+
+    // Internal state for the visual checkmark selection
+    // Defaulting to 'light', but you could initialize this from localStorage if needed
+    let currentTheme = $state("light");
+
     const STATIC_THEMES: ThemeConfig[] = [
-        { name: "light", icon: "🌞", description: "Clean, light mode appearance" },
-        { name: "dark", icon: "🌙", description: "Sleek dark mode interface" },
-        { name: "cupcake", icon: "🧁", description: "Sweet pastel colors" },
-        { name: "bumblebee", icon: "🐝", description: "Sharp black and yellow" },
-        { name: "emerald", icon: "💚", description: "Lush green and neutral tones" },
-        { name: "corporate", icon: "🏢", description: "Professional and modern" },
-        { name: "synthwave", icon: "🌆", description: "Retro-futuristic vibrant style" },
-        { name: "retro", icon: "📺", description: "Nostalgic vintage look" },
-        { name: "cyberpunk", icon: "🤖", description: "High-tech, neon aesthetic" },
-        { name: "valentine", icon: "💝", description: "Soft romantic theme" },
-        { name: "halloween", icon: "🎃", description: "Spooky orange and black" },
-        { name: "garden", icon: "🌷", description: "Fresh natural colors" },
-        { name: "forest", icon: "🌲", description: "Deep woodland tones" },
-        { name: "aqua", icon: "💧", description: "Cool aquatic colors" },
-        { name: "lofi", icon: "🎵", description: "Minimalist and calm" },
-        { name: "pastel", icon: "🎨", description: "Soft pastel palette" },
-        { name: "fantasy", icon: "🔮", description: "Mystical and enchanting" },
-        { name: "wireframe", icon: "📝", description: "Simple black and white" },
-        { name: "black", icon: "⚫", description: "Monochrome dark theme" },
-        { name: "luxury", icon: "👑", description: "Elegant gold and black" },
-        { name: "dracula", icon: "🧛", description: "Dark vampire-inspired" },
-        { name: "cmyk", icon: "🖨️", description: "Print-inspired colors" },
-        { name: "autumn", icon: "🍂", description: "Warm autumn colors" },
-        { name: "business", icon: "💼", description: "Clean business look" },
-        { name: "acid", icon: "🧪", description: "Bright neon colors" },
-        { name: "lemonade", icon: "🍋", description: "Fresh citrus theme" },
-        { name: "night", icon: "🌃", description: "Dark nighttime colors" },
-        { name: "coffee", icon: "☕", description: "Warm coffee tones" },
-        { name: "winter", icon: "❄️", description: "Cool winter colors" },
-        { name: "dim", icon: "🔅", description: "Dimmed light theme" },
-        { name: "nord", icon: "❄️", description: "Arctic color palette" },
-        { name: "sunset", icon: "🌅", description: "Warm sunset colors" },
+        { name: "light", icon: "🌞" },
+        { name: "dark", icon: "🌙" },
+        { name: "cupcake", icon: "🧁" },
+        { name: "bumblebee", icon: "🐝" },
+        { name: "emerald", icon: "💚" },
+        { name: "corporate", icon: "🏢" },
+        { name: "synthwave", icon: "🌆" },
+        { name: "retro", icon: "📺" },
+        { name: "cyberpunk", icon: "🤖" },
+        { name: "valentine", icon: "💝" },
+        { name: "halloween", icon: "🎃" },
+        { name: "garden", icon: "🌷" },
+        { name: "forest", icon: "🌲" },
+        { name: "aqua", icon: "💧" },
+        { name: "lofi", icon: "🎵" },
+        { name: "pastel", icon: "🎨" },
+        { name: "fantasy", icon: "🔮" },
+        { name: "wireframe", icon: "📝" },
+        { name: "black", icon: "⚫" },
+        { name: "luxury", icon: "👑" },
+        { name: "dracula", icon: "🧛" },
+        { name: "cmyk", icon: "🖨️" },
+        { name: "autumn", icon: "🍂" },
+        { name: "business", icon: "💼" },
+        { name: "acid", icon: "🧪" },
+        { name: "lemonade", icon: "🍋" },
+        { name: "night", icon: "🌃" },
+        { name: "coffee", icon: "☕" },
+        { name: "winter", icon: "❄️" },
+        { name: "dim", icon: "🔅" },
+        { name: "nord", icon: "❄️" },
+        { name: "sunset", icon: "🌅" },
     ];
 </script>
 
 <div class="dropdown dropdown-bottom">
+    <!-- Trigger Button -->
     <div 
         tabindex="0" 
         role="button" 
-        class="btn btn-primary btn-circle"
+        class="btn btn-ghost btn-circle"
         aria-label="Select theme"
     >
+        <span class="flex items-center justify-center">
+            {#if icon}
+                <!-- Render passed icon snippet -->
+                {@render icon()}
+            {:else}
+                <!-- Default Palette Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="13.5" cy="6.5" r="2.5" />
+                    <circle cx="17.5" cy="10.5" r="2.5" />
+                    <circle cx="8.5" cy="7.5" r="2.5" />
+                    <circle cx="6.5" cy="12.5" r="2.5" />
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+                </svg>
+            {/if}
+        </span>
     </div>
 
-    <div class="dropdown-content z-30 menu p-3 bg-base-200 border border-base-300 rounded-box shadow-xl mt-2 w-64 max-h-96 overflow-y-auto">
+    <!-- Dropdown Menu -->
+    <div class="dropdown-content z-[1] menu p-2 bg-base-200 border border-base-300 rounded-box shadow-2xl mt-2 w-64 max-h-96 overflow-y-auto">
         <ul class="menu bg-base-100 rounded-box w-full">
             {#each STATIC_THEMES as theme}
-                <input
-                    type="radio"
-                    name="{theme}-button"
-                    class="btn theme-controller join-item"
-                    value={theme.name} 
-                    aria-label={`${theme.icon} ${theme.name}`}
-                    />
+                <li class="p-1">
+                    <input 
+                        type="radio" 
+                        name="{theme}-button"
+                        class="btn theme-controller join-item"
+                        value={theme.name}
+                        bind:group={currentTheme}
+                        aria-label="{theme.icon} {theme.name}"
+                    >
+                </li>
             {/each}
         </ul>
     </div>

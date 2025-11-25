@@ -5,6 +5,9 @@ export interface WasmToken {
   category: string;
   detail: string;
   line: number;
+  // New Span Fields
+  start: number;
+  end: number;
 }
 
 export type TokenCategory =
@@ -16,8 +19,7 @@ export type TokenCategory =
   | "punctuation"
   | "invalid";
 
-// --- NUEVO: Estructuras para la Fase 2 (Análisis Semántico) ---
-
+// (Keep the Phase 2 structures as they were)
 export interface SymbolRecord {
   name: string;
   type_: "Variable" | "Label" | "Constant";

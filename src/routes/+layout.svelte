@@ -1,3 +1,4 @@
+<!-- svelte-ignore a11y_missing_attribute -->
 <!-- src/routes/+layout.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';

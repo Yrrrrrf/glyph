@@ -16,12 +16,16 @@
 <header class="bg-base-200 p-4 flex items-center justify-between">
   <!-- Left -->
   <div class="flex items-center gap-4">
-    <ThemeSelector />
+    <!-- <ThemeSelector /> -->
 
-    <svg class="h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
-            d="M12 2l7 5v10l-7 5-7-5V7l7-5z" />
-    </svg>
+    <ThemeSelector>
+        {#snippet icon()}
+            <svg class="h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2l7 5v10l-7 5-7-5V7l7-5z" />
+            </svg>
+        {/snippet}
+    </ThemeSelector>
+
     <h1 class="text-xl font-bold">Glyph</h1>
     
     {#if glyphStore.currentFile}

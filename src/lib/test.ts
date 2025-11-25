@@ -29,7 +29,10 @@ function readFile(filename: string): string {
   }
 }
 
-function printLexerOutput(tokens: WasmToken[] | null): void {
+function printLexerOutput(
+  tokens: WasmToken[] | null,
+  sourceCode: string,
+): void {
   console.log("=== LEXER OUTPUT ===");
 
   if (!tokens || tokens.length === 0) {
@@ -37,28 +40,35 @@ function printLexerOutput(tokens: WasmToken[] | null): void {
     return;
   }
 
+  // Header with new columns
   console.log(
-    "Line".padEnd(10) + " | " +
-      "Category".padEnd(22) + " | " +
-      "Value".padEnd(30) + " | " +
+    "Line".padEnd(5) + " | " +
+      "Span".padEnd(9) + " | " + // Start-End
+      "Category".padEnd(20) + " | " +
+      "Raw Text".padEnd(15) + " | " +
       "Detail",
   );
   console.log("-".repeat(100));
 
   for (const token of tokens) {
-    const lineStr = String(token.line + 1).padEnd(10);
-    const catStr = token.category.padEnd(22);
-    const valStr = token.element.padEnd(30);
+    const lineStr = String(token.line).padEnd(5);
+    // Create span string: "0-5"
+    const spanStr = `${token.start}-${token.end}`.padEnd(9);
+    const catStr = token.category.padEnd(20);
 
-    // Simple color for errors similar to Rust
+    // Slice the original text to prove we have the correct indices
+    const actualText = sourceCode.slice(token.start, token.end).padEnd(15);
+
+    // Color logic
+    let output =
+      `${lineStr} | ${spanStr} | ${catStr} | ${actualText} | ${token.detail}`;
+
     if (
       token.category.includes("Error") || token.category.includes("invalid")
     ) {
-      console.log(
-        `\x1b[31m${lineStr} | ${catStr} | ${valStr} | ${token.detail}\x1b[0m`,
-      );
+      console.log(`\x1b[31m${output}\x1b[0m`);
     } else {
-      console.log(`${lineStr} | ${catStr} | ${valStr} | ${token.detail}`);
+      console.log(output);
     }
   }
   console.log();
@@ -91,7 +101,8 @@ async function main(): Promise<void> {
   const rawResult = analyze_assembly(code) as unknown as JsCompilerResult;
 
   // 1. Print Lexer Output (if tokens exist)
-  printLexerOutput(rawResult.tokens);
+  // Pass 'code' here so we can verify the slicing
+  printLexerOutput(rawResult.tokens, code);
 
   // 2. Print Errors (Lexer, Parser, or Validator errors)
   printErrors(rawResult.errors);

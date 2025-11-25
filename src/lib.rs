@@ -14,7 +14,7 @@ use semantics::validator::{Flavor, validate};
 use syntax::{
     lexer::lexer,
     parser::parser,
-    tokens::{Token, constant}, // Import constant and Token
+    tokens::{Token, constant},
 };
 
 #[derive(Serialize)]
@@ -27,13 +27,16 @@ pub struct JsCompilerResult {
 
 #[derive(Serialize)]
 pub struct JsToken {
-    pub element: String,  // e.g., "128"
-    pub category: String, // e.g., "Constant (Dec)"
-    pub detail: String,   // e.g., "Constant(NumberDecimal(128))"
+    pub element: String,  // The "Canonical" value (e.g., "MOV")
+    pub category: String, // The display category
+    pub detail: String,   // The debug detail
     pub line: usize,
+    // --- NEW SPAN FIELDS ---
+    pub start: usize, // Index where token begins
+    pub end: usize,   // Index where token ends
 }
 
-// Helper function to match main.rs formatting logic
+// (Keep get_token_details exactly as it was in the previous step)
 fn get_token_details(token: &Token) -> (String, String) {
     match token {
         Token::Instruction(s) => ("Instruction".to_string(), s.clone()),
@@ -54,35 +57,34 @@ fn get_token_details(token: &Token) -> (String, String) {
 
 #[wasm_bindgen]
 pub fn analyze_full_program(source: &str) -> JsValue {
-    // 1. Lexing
     let len = source.len();
     let (tokens_result, lex_errs) = lexer().parse(source).into_output_errors();
 
     let mut js_errors = Vec::new();
 
-    // Convert lexer errors
     for err in lex_errs {
         js_errors.push(format!("Lexing Error: {:?}", err));
     }
 
-    // Prepare tokens for JS, even if there are errors (if tokens exist)
+    // MAP TOKENS WITH SPANS
     let js_tokens = if let Some(tokens) = &tokens_result {
         Some(
             tokens
                 .iter()
                 .map(|(t, span)| {
-                    // Calculate line number
+                    // Calculate line manually (or you could map spans to lines later in JS)
                     let line = source[..span.start].lines().count().max(1);
 
-                    // Get friendly category and clean value
                     let (category, element) = get_token_details(t);
 
                     JsToken {
                         element,
                         category,
-                        // Use Rust's Debug formatter {:?} to get the Enum detail
                         detail: format!("{:?}", t),
                         line,
+                        // Extract precise indices from Chumsky Span
+                        start: span.start,
+                        end: span.end,
                     }
                 })
                 .collect::<Vec<JsToken>>(),
@@ -103,7 +105,7 @@ pub fn analyze_full_program(source: &str) -> JsValue {
 
     let tokens = tokens_result.unwrap();
 
-    // 2. Parsing
+    // Parsing Logic (unchanged)
     let token_stream = chumsky::input::Stream::from_iter(tokens.into_iter())
         .map(SimpleSpan::from(len..len), |(t, s)| (t, s));
 
@@ -129,10 +131,8 @@ pub fn analyze_full_program(source: &str) -> JsValue {
 
     let program = ast.unwrap();
 
-    // 3. Validation
     let strict_mode = true;
     let flavor = Flavor::Masm;
-
     let semantic_errs = validate(&program, flavor, strict_mode);
     for err in semantic_errs {
         js_errors.push(format!("Semantic Error: {}", err.message));
@@ -149,7 +149,7 @@ pub fn analyze_full_program(source: &str) -> JsValue {
     .unwrap()
 }
 
-// Keep this for legacy compatibility if needed
+// Keep legacy export
 #[wasm_bindgen]
 pub fn analyze_assembly(source: &str) -> JsValue {
     analyze_full_program(source)
