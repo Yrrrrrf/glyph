@@ -8,7 +8,7 @@
   "file_input_failed": "Falló",
   "analysis_panel_ln": "Ln",
   "analysis_panel_value": "Valor",
-  "analysis_panel_category_detail": "Categoría / Detalle",
+  "analysis_panel_category_detail": "Categoría ",
   "page_load_assembly_file": "Cargar Archivo Assembly",
   "page_switch_to_lexer_tab": "O cambia a la pestaña \"Lexer\" para empezar a escribir desde cero.",
   "page_analyzing": "Analizando...",

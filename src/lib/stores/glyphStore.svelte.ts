@@ -17,11 +17,11 @@ export interface HighlightInfo {
   end?: number;
 }
 
-// UI Badge Colors (For Analysis Panel) - Deprecated in favor of component logic, 
-// but kept if needed for other parts. 
+// UI Badge Colors (For Analysis Panel) - Deprecated in favor of component logic,
+// but kept if needed for other parts.
 export function getTokenBadgeClasses(type: string): string {
-   // ... (existing logic, mostly unused now by AnalysisPanel)
-   return "badge-ghost";
+  // ... (existing logic, mostly unused now by AnalysisPanel)
+  return "badge-ghost";
 }
 
 // Syntax Highlighting Colors (For Editor Text)
@@ -66,7 +66,7 @@ class GlyphStore {
   private debounceTimer: number | undefined = undefined;
 
   get HAS_FILE(): boolean {
-    return this.sourceCode.length > 0; 
+    return this.sourceCode.length > 0;
   }
 
   get TOKEN_COUNT(): number {
@@ -75,7 +75,7 @@ class GlyphStore {
 
   setSelectedLine = (line: number | null) => {
     this.selectedLine = line;
-    // FIX: Removed 'this.highlightInfo = null;' 
+    // FIX: Removed 'this.highlightInfo = null;'
     // This allows the specific token highlight to persist while scrolling/selecting.
   };
 
@@ -95,7 +95,7 @@ class GlyphStore {
       return;
     }
     this.currentFile = filename;
-    this.updateCode(content); 
+    this.updateCode(content);
     this.activeTab = "lexer";
   };
 
@@ -122,9 +122,13 @@ class GlyphStore {
     this.analysisState = "loading";
 
     try {
+      console.log("🚀 Starting Analysis...");
+
       const rawResult = analyze_full_program(
         this.sourceCode,
       ) as unknown as JsCompilerResult;
+
+      console.log("📦 WASM Result:", rawResult); // LOG FOR DEBUGGING
 
       // 1. Lexer
       if (rawResult.tokens) {
@@ -133,17 +137,18 @@ class GlyphStore {
         this.lexerResult = [];
       }
 
-      // 2. Parser 
-      if (rawResult.program) {
-        this.parserResult = {
-          lines: [], 
-          symbol_table: [],
-        };
-      }
+      // 2. Parser & Analysis (UPDATED)
+      // Now we pull the pre-calculated data directly from Rust
+      this.parserResult = {
+        lines: rawResult.line_analysis || [],
+        symbol_table: rawResult.symbol_table || [],
+      };
 
-      // 3. Errors 
+      console.log("🌳 Parser Result Set:", this.parserResult);
+
+      // 3. Errors
       if (!rawResult.success && rawResult.errors.length > 0) {
-        // console.warn(rawResult.errors);
+        console.warn("Analysis found errors:", rawResult.errors);
       } else {
         this.error = null;
       }
@@ -152,7 +157,7 @@ class GlyphStore {
     } catch (err) {
       this.analysisState = "error";
       this.error = err instanceof Error ? err.message : "Analysis failed";
-      console.error(err);
+      console.error("❌ Critical Error:", err);
     }
   };
 }

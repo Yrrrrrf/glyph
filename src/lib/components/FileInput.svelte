@@ -16,7 +16,7 @@
     error = null;
     console.log('📄 FileInput selected:', file.name);
 
-    // Validate
+    // Validate extension
     if (!file.name.toLowerCase().endsWith('.asm')) {
       error = m.file_input_invalid_file({ fileName: file.name });
       console.error('❌ FileInput validation failed:', error);
@@ -24,9 +24,17 @@
     }
 
     const reader = new FileReader();
+    
     reader.onload = async (e) => {
-      const content = e.target?.result as string;
+      let content = e.target?.result as string;
+      
+      // --- FIX: REMOVE REPLACEMENT CHARACTERS ---
+      // This removes the  character which causes offset desyncs
+      // between the Rust backend (byte-based) and JS frontend (char-based).
+      content = content.replace(/\uFFFD/g, ""); 
+      
       console.log('📖 File read complete, length:', content.length);
+      
       try {
         await onFileLoaded(content, file.name);
         console.log('✅ FileInput: onFileLoaded succeeded');
@@ -37,6 +45,8 @@
       }
     };
     
+    // Default reads as UTF-8. If the file is legacy ANSI, it produces .
+    // By cleaning the result above, we solve the sync issue.
     reader.readAsText(file);
   }
 </script>

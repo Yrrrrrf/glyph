@@ -1,8 +1,4 @@
-#![allow(unused)]
-#![allow(dead_code)]
-
 // src/ast.rs
-// use crate::syntax::tokens::Token;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -11,42 +7,42 @@ pub enum Operand {
     Immediate(u64, String),
     Memory { base: String, offset: Option<i64> },
     Label(String),
-    StringLiteral(String), // For DB "hello"
+    StringLiteral(String),
+    // NEW VARIANTS
+    Dup { count: u64, value: Box<Operand> },
+    Uninitialized,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub enum Statement {
-    // CODE
     Instruction {
         mnemonic: String,
         operands: Vec<Operand>,
     },
     Label(String),
-
-    // DATA / STRUCTURE
-    // e.g. ".stack segment" or "data segment"
     Segment {
         name: String,
     },
-    SegmentEnd, // "ends"
-
-    // e.g. "var1 db 10"
+    SegmentEnd,
     Variable {
         name: String,
-        directive: String,
+        directive: String, // "DB" or "DW"
         value: Operand,
     },
-    // e.g. "dw 128" (no name)
+    // NEW VARIANT
+    Constant {
+        name: String,
+        value: Operand,
+    },
     Data {
         directive: String,
         value: Operand,
     },
-
-    // Unhandled but parsed directive
     Directive {
         name: String,
         args: Vec<Operand>,
     },
+    Unknown,
 }
 
 pub type Program = Vec<Statement>;
