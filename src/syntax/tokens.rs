@@ -95,14 +95,10 @@ impl fmt::Display for InstructionType {
 pub fn classify_instruction(mnemonic: &str) -> Option<InstructionType> {
     match mnemonic {
         "POP" | "LES" | "LDS" | "MOV" | "XCHG" => Some(InstructionType::DataTransfer),
-        "DEC" | "IDIV" | "IMUL" | "ADC" | "CMP" | "AAD" | "ADD" | "SUB" | "INC" => {
-            Some(InstructionType::Arithmetic)
-        }
+        "DEC" | "IDIV" | "IMUL" | "ADC" | "CMP" | "AAD" => Some(InstructionType::Arithmetic),
         "AAA" => Some(InstructionType::Arithmetic),
         "STC" | "CLC" => Some(InstructionType::FlagControl),
-        "JAE" | "JC" | "JGE" | "JNB" | "JNG" | "JNO" | "JZ" | "JNZ" => {
-            Some(InstructionType::ConditionalJump)
-        }
+        "JAE" | "JC" | "JGE" | "JNB" | "JNG" | "JNO" => Some(InstructionType::ConditionalJump),
         "HLT" | "SCASW" | "INTO" | "INT" => Some(InstructionType::Interrupt),
         _ => None,
     }

@@ -1,3 +1,4 @@
+<!-- src/lib/components/AnalysisPanel.svelte -->
 <script lang="ts">
   import type { WasmToken } from '$lib/types/tokenTypes.svelte';
   import type { HighlightInfo } from '$lib/stores/glyphStore.svelte';
@@ -22,6 +23,10 @@
   let rowRefs: Record<number, HTMLTableRowElement> = {};
   let isHoveringTable = $state(false);
 
+  // --- FILTER LOGIC ---
+  // Create a derived view that excludes Punctuation tokens
+  let visibleTokens = $derived(tokens.filter((t: any) => t.category !== 'Punctuation'));
+
   // --- I18N MAPPING HELPERS ---
   const norm = (s: string) => s.toLowerCase().replace(/ /g, '_');
 
@@ -43,21 +48,20 @@
   // --- STYLING HELPERS ---
   function getBadgeClass(cat: string): string {
     const c = cat.toLowerCase();
-    // Matching Code Editor Colors roughly
-    if (c === 'instruction') return 'badge-info text-info-content';       // Blue
-    if (c === 'register') return 'badge-success text-success-content';    // Green
-    if (c === 'directive') return 'badge-secondary text-secondary-content'; // Purple/Pink
-    if (c === 'constant') return 'badge-warning text-warning-content';    // Orange/Yellow
-    if (c === 'symbol') return 'badge-neutral text-neutral-content';      // Grey/Dark
-    if (c === 'punctuation') return 'badge-ghost opacity-60';             // Transparent
-    if (c === 'error') return 'badge-error text-error-content';           // Red
+    if (c === 'instruction') return 'badge-info text-info-content';       
+    if (c === 'register') return 'badge-success text-success-content';    
+    if (c === 'directive') return 'badge-secondary text-secondary-content'; 
+    if (c === 'constant') return 'badge-warning text-warning-content';    
+    if (c === 'symbol') return 'badge-neutral text-neutral-content';      
+    if (c === 'error') return 'badge-error text-error-content';           
     return 'badge-ghost';
   }
 
   // --- SCROLL LOGIC ---
   $effect(() => {
-    if (!isHoveringTable && selectedLine !== null && tokens.length > 0 && tableContainerRef) {
-        const targetIndex = tokens.findIndex((t: any) => t.line === selectedLine);
+    // We check against visibleTokens now, not raw tokens, to find the correct DOM row index
+    if (!isHoveringTable && selectedLine !== null && visibleTokens.length > 0 && tableContainerRef) {
+        const targetIndex = visibleTokens.findIndex((t: any) => t.line === selectedLine);
         if (targetIndex !== -1 && rowRefs[targetIndex]) {
             rowRefs[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -78,7 +82,6 @@
   onmouseenter={() => isHoveringTable = true}
   onmouseleave={() => isHoveringTable = false}
 >
-
   <table class="table table-xs table-pin-rows">
     <thead>
       <tr class="bg-base-200/50 backdrop-blur-sm z-10">
@@ -88,7 +91,8 @@
       </tr>
     </thead>
     <tbody>
-      {#each tokens as token, idx (idx)}
+      <!-- Iterate over visibleTokens instead of tokens -->
+      {#each visibleTokens as token, idx (idx)}
         {@const isHighlighted = isRowHighlighted(token)}
         {@const isSelected = selectedLine === token.line}
         
@@ -122,7 +126,7 @@
             {token.line}
           </td>
           
-          <!-- Value (Colored Text) -->
+          <!-- Value -->
           <td class="font-mono text-sm max-w-[120px] break-all">
              <span class={getTokenTextClass(token.category)}>
                 {token.element}
@@ -132,12 +136,10 @@
           <!-- Category / Detail -->
           <td>
             <div class="flex flex-col gap-1 items-start justify-center h-full py-1">
-                <!-- Category Badge -->
                 <span class="badge badge-sm font-bold border-none h-auto py-0.5 min-h-[1.25rem] {getBadgeClass(token.category)}">
                     {translateCategory(token.category)}
                 </span>
 
-                <!-- Detail Text (Only if different) -->
                 {#if token.detail && token.detail !== token.category}
                     <span class="text-[10px] uppercase tracking-wider opacity-60 font-medium leading-none ml-1">
                         {translateDetail(token.detail)}
