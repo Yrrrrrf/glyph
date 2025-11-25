@@ -17,3 +17,6 @@ temp/
 # project specific ignores
 x8086/
 repos/
+
+# Paraglide
+src/lib/paraglide

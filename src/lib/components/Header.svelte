@@ -1,16 +1,8 @@
 <!-- src/lib/components/Header.svelte -->
 <script lang="ts">
   import { glyphStore } from '$lib/stores/glyphStore.svelte';
+    import LanguageSelector from './LanguageSelector.svelte';
   import ThemeSelector from './ThemeSelector.svelte';
-
-    // DEBUG: Watch store changes in the component (this is allowed!)
-  // $effect(() => {
-  //   console.log('🧩 HEADER - Store update:', {
-  //     file: glyphStore.currentFile,
-  //     tab: glyphStore.activeTab,
-  //     tokens: glyphStore.TOKEN_COUNT
-  //   });
-  // });
 </script>
 
 <header class="bg-base-200 p-4 flex items-center justify-between">
@@ -25,6 +17,8 @@
             </svg>
         {/snippet}
     </ThemeSelector>
+
+    <LanguageSelector />
 
     <h1 class="text-xl font-bold">Glyph</h1>
     

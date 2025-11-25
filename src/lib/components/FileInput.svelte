@@ -40,11 +40,11 @@
 </script>
 
 <div class="form-control w-full max-w-xs">
-    <span class="label-text font-semibold">Select Assembly File</span>
-  
+  <div class="label-text font-semibold text-center w-full mb-2">Select Assembly File</div>
+    
   <input 
     type="file" 
-    class="file-input file-input-primary file-input-xs w-full" 
+    class="file-input file-input-primary file-input-lx w-full" 
     onchange={handleFileInput}
   />
   
