@@ -17,33 +17,44 @@
     selectedLine: number | null;
   }>();
 
-  // Highlight logic for the Table Row
+  let tableContainerRef = $state<HTMLDivElement>();
+  let rowRefs: Record<number, HTMLTableRowElement> = {};
+
+  // EFFECT: Scroll to the selected line when it changes in the Store (from Editor)
+  $effect(() => {
+    if (selectedLine !== null && tokens.length > 0 && tableContainerRef) {
+        // Find the first token that matches the line
+        const targetIndex = tokens.findIndex((t: any) => t.line === selectedLine);
+        
+        if (targetIndex !== -1) {
+            const row = rowRefs[targetIndex];
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+  });
+
   function isRowHighlighted(token: WasmToken): boolean {
     if (!highlightedInfo) return false;
-    // Check if spans match (precise) or just line (broad)
+    // Specific token hover
     if (highlightedInfo.start !== undefined) {
         return token.start === highlightedInfo.start;
     }
+    // Broad line hover
     return token.line === highlightedInfo.line;
-  }
-
-  function getTokenType(detail: string): string {
-    return detail.split('-')[0];
-  }
-
-  function formatDetail(detail: string): string {
-    // Regex to extract inner part of Enum: "Constant(Hex(...))" -> "Hex"
-    // Or just clean up the Rust debug output slightly
-    return detail.replace(/([A-Z][a-z]+)\((.*)\)/, '$1: $2');
   }
 </script>
 
-<div class="bg-base-100 border border-base-300 rounded-lg overflow-auto h-full custom-scrollbar">
+<div 
+  bind:this={tableContainerRef}
+  class="bg-base-100 border border-base-300 rounded-lg overflow-auto h-full custom-scrollbar"
+>
   <table class="table table-xs table-pin-rows">
     <thead>
       <tr>
         <th class="w-12">Ln</th>
-        <th class="w-20">Span</th>
+        <!-- <th class="w-20">Span</th> -->
         <th>Value</th>
         <th>Category / Detail</th> 
       </tr>
@@ -51,11 +62,12 @@
     <tbody>
       {#each tokens as token, idx (idx)}
         <tr
+          bind:this={rowRefs[idx]}
           onmouseenter={() => onTokenHover({ 
-            line: token.line ?? 1, 
+            line: token.line, 
             element: token.element,
             detail: token.detail,
-            start: token.start, // <--- PASS INDICES
+            start: token.start,
             end: token.end
           })}
           onmouseleave={() => onTokenHover(null)}
@@ -63,12 +75,14 @@
           class="hover:bg-base-200 transition-colors duration-75 cursor-pointer"
           class:bg-warning={isRowHighlighted(token)}
           class:bg-opacity-20={isRowHighlighted(token)}
+          class:bg-base-200={selectedLine === token.line} 
+          class:border-l-4={selectedLine === token.line}
+          class:border-primary={selectedLine === token.line}
         >
           <td class="font-mono text-base-content/50">{token.line}</td>
-          <td class="font-mono text-xs text-base-content/40">{token.start}-{token.end}</td>
+          <!-- <td class="font-mono text-xs text-base-content/40">{token.start}-{token.end}</td> -->
           
-          <!-- Element (Raw text) -->
-          <td class="font-mono font-bold text-primary">{token.element}</td>
+          <td class="font-mono font-bold text-primary whitespace-pre">{token.element}</td>
           
           <td>
             <span class={getTokenBadgeClasses(token.category)}>
