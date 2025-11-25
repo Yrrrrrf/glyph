@@ -1,6 +1,7 @@
 <!-- src/lib/components/ParserView.svelte -->
 <script lang="ts">
-  import { glyphStore } from '$lib/stores/glyphStore.svelte';
+  import { glyphStore, getTokenTextClass } from '$lib/stores/glyphStore.svelte';
+  import type { WasmToken } from '$lib/types/tokenTypes.svelte';
   import * as m from '$lib/paraglide/messages';
 
   const toHex = (num: number) => {
@@ -28,6 +29,61 @@
     }
 
     return { type, text, badgeClass };
+  }
+
+  // --- HIGHLIGHTING & FILTERING LOGIC ---
+  
+  function escapeHtml(text: string): string {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Removes comments by cutting text at the first ';'
+  function processComments(text: string): string {
+    const commentIdx = text.indexOf(';');
+    if (commentIdx === -1) return escapeHtml(text);
+    return escapeHtml(text.slice(0, commentIdx));
+  }
+
+  // Determines if a line should be shown.
+  // Returns FALSE if the line is empty, whitespace only, or just a comment.
+  function isLineVisible(text: string): boolean {
+    const commentIdx = text.indexOf(';');
+    const codePart = commentIdx === -1 ? text : text.slice(0, commentIdx);
+    return codePart.trim().length > 0;
+  }
+
+  function highlightLine(lineText: string, lineNum: number): string {
+    const tokens = glyphStore.lexerResult?.filter((t: WasmToken) => t.line === lineNum) || [];
+    // Ensure tokens are sorted by position
+    tokens.sort((a, b) => a.start - b.start);
+
+    let html = "";
+    let cursor = 0;
+
+    for (const token of tokens) {
+        // Find the token text in the current line relative to the cursor.
+        const relativeStart = lineText.indexOf(token.element, cursor);
+
+        if (relativeStart === -1) continue; 
+
+        // 1. Text before the token (whitespace)
+        const preText = lineText.slice(cursor, relativeStart);
+        html += processComments(preText);
+
+        // 2. The Token itself
+        // Note: We assume tokens don't contain comments inside them
+        const colorClass = getTokenTextClass(token.category);
+        html += `<span class="${colorClass}">${escapeHtml(token.element)}</span>`;
+
+        // Advance cursor
+        cursor = relativeStart + token.element.length;
+    }
+
+    // 3. Remaining text
+    const remainder = lineText.slice(cursor);
+    html += processComments(remainder);
+
+    return html;
   }
 </script>
 
@@ -67,55 +123,55 @@
           </thead>
           <tbody>
             {#each glyphStore.parserResult.lines as line (line.line_number)}
-              <tr class="group transition-colors border-l-4"
-                  class:bg-error={!line.is_correct}
-                  class:bg-opacity-5={!line.is_correct}
-                  class:border-error={!line.is_correct}
-                  class:border-transparent={line.is_correct}
-                  class:hover:bg-base-200={line.is_correct}
-              >
-                <!-- Line Number -->
-                <td class="font-mono text-base-content/40 text-center select-none">
-                    {line.line_number}
-                </td>
-                
-                <!-- Instruction Text -->
-                <td class="font-mono font-medium whitespace-pre"
-                    class:text-base-content={line.is_correct}
-                    class:text-base-content-60={!line.is_correct}
+              <!-- Only render if the line has content (after hiding comments) or if it has an error -->
+              {#if isLineVisible(line.instruction) || !line.is_correct}
+                <tr class="group transition-colors border-l-4"
+                    class:bg-error={!line.is_correct}
+                    class:bg-opacity-5={!line.is_correct}
+                    class:border-error={!line.is_correct}
+                    class:border-transparent={line.is_correct}
+                    class:hover:bg-base-200={line.is_correct}
                 >
-                    {line.instruction}
-                </td>
+                    <!-- Line Number -->
+                    <td class="font-mono text-base-content/40 text-center select-none">
+                        {line.line_number}
+                    </td>
+                    
+                    <!-- Instruction Text (Highlighted, No Comments) -->
+                    <td class="font-mono font-medium whitespace-pre text-sm">
+                    {@html highlightLine(line.instruction, line.line_number)}
+                    </td>
 
-                <!-- Status Badge -->
-                <td class="text-center">
-                  {#if !line.is_correct}
-                    <div class="tooltip" data-tip="Error">
-                        <span class="badge badge-xs badge-error font-bold text-white shadow-sm">ERR</span>
-                    </div>
-                  {:else}
-                    <span class="opacity-0 group-hover:opacity-20 text-success text-xs font-bold transition-opacity">OK</span>
-                  {/if}
-                </td>
+                    <!-- Status Badge -->
+                    <td class="text-center">
+                    {#if !line.is_correct}
+                        <div class="tooltip" data-tip="Error">
+                            <span class="badge badge-xs badge-error font-bold text-white shadow-sm">ERR</span>
+                        </div>
+                    {:else}
+                        <span class="opacity-0 group-hover:opacity-20 text-success text-xs font-bold transition-opacity">OK</span>
+                    {/if}
+                    </td>
 
-                <!-- Error Message (Enhanced) -->
-                <td class="text-xs font-medium py-2 align-middle">
-                  {#if line.error_message}
-                     {@const err = parseError(line.error_message)}
-                     <div class="flex items-center gap-2">
-                        <!-- ERROR TYPE BADGE -->
-                        <span class="badge badge-sm font-bold border-none h-5 {err.badgeClass}">
-                            {err.type}
-                        </span>
-                        
-                        <!-- ERROR TEXT -->
-                        <span class="text-base-content/80 font-mono text-[11px]">
-                            {err.text}
-                        </span>
-                     </div>
-                  {/if}
-                </td>
-              </tr>
+                    <!-- Error Message (Enhanced) -->
+                    <td class="text-xs font-medium py-2 align-middle">
+                    {#if line.error_message}
+                        {@const err = parseError(line.error_message)}
+                        <div class="flex items-center gap-2">
+                            <!-- ERROR TYPE BADGE -->
+                            <span class="badge badge-sm font-bold border-none h-5 {err.badgeClass}">
+                                {err.type}
+                            </span>
+                            
+                            <!-- ERROR TEXT -->
+                            <span class="text-base-content/80 font-mono text-[11px]">
+                                {err.text}
+                            </span>
+                        </div>
+                    {/if}
+                    </td>
+                </tr>
+              {/if}
             {/each}
           </tbody>
         </table>
