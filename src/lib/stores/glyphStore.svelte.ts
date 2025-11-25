@@ -1,7 +1,10 @@
 // src/lib/stores/glyphStore.svelte.ts
-import { analyze_assembly, analyze_full_program } from "$lib/wasm";
+import { analyze_full_program } from "$lib/wasm";
 import type { WasmToken } from "$lib/types/tokenTypes.svelte";
-import type { AnalysisResult } from "$lib/types/analysisTypes";
+import type {
+  AnalysisResult,
+  JsCompilerResult,
+} from "$lib/types/analysisTypes";
 
 export type TabState = "load" | "lexer" | "parser";
 export type AnalysisState = "idle" | "loading" | "ready" | "error";
@@ -14,14 +17,18 @@ export interface HighlightInfo {
 
 // Helper for badge colors
 export function getTokenBadgeClasses(type: string): string {
-  if (type.startsWith("instruction")) return "badge-info text-info-content";
-  if (type.startsWith("register")) return "badge-success text-success-content";
-  if (type.startsWith("constant") || type.startsWith("string")) {
+  if (!type) return "badge-ghost";
+  const t = type.toLowerCase();
+  if (t.startsWith("instruction")) return "badge-info text-info-content";
+  if (t.startsWith("register")) return "badge-success text-success-content";
+  if (t.startsWith("constant") || t.startsWith("string")) {
     return "badge-warning text-warning-content";
   }
-  if (type.startsWith("punctuation")) return "badge-outline";
-  if (type.startsWith("directive")) return "badge-accent text-accent-content";
-  if (type === "invalid") return "badge-error text-error-content";
+  if (t.startsWith("punctuation")) return "badge-outline";
+  if (t.startsWith("directive")) return "badge-accent text-accent-content";
+  if (t === "invalid" || t.includes("error")) {
+    return "badge-error text-error-content";
+  }
   return "badge-ghost";
 }
 
@@ -31,8 +38,11 @@ class GlyphStore {
   currentFile = $state<string | null>(null);
 
   // --- DATA STORAGE ---
-  // RENAME THIS: analysisResult -> lexerResult
   lexerResult = $state<WasmToken[] | null>(null);
+
+  // Note: ParserResult in the frontend expects SymbolTable/Lines.
+  // Currently Rust returns AST. You will need to bridge this later.
+  // For now, we store null or need to map the AST to this view.
   parserResult = $state<AnalysisResult | null>(null);
 
   // UI State
@@ -47,7 +57,6 @@ class GlyphStore {
   }
 
   get TOKEN_COUNT(): number {
-    // Update reference here too
     return this.lexerResult?.length ?? 0;
   }
 
@@ -80,8 +89,8 @@ class GlyphStore {
   clearFile = () => {
     this.sourceCode = "";
     this.currentFile = null;
-    this.lexerResult = null; // Clear lexer
-    this.parserResult = null; // Clear parser
+    this.lexerResult = null;
+    this.parserResult = null;
     this.analysisState = "idle";
     this.activeTab = "load";
   };
@@ -92,20 +101,43 @@ class GlyphStore {
     this.error = null;
 
     try {
-      // PHASE 1: LEXER
-      const tokens = analyze_assembly(this.sourceCode) as WasmToken[];
-      this.lexerResult = tokens; // <--- SAVE TO lexerResult
-
-      // PHASE 2: PARSER
-      const semanticResult = analyze_full_program(
+      // Call Rust Wrapper
+      // analyze_full_program now handles both lexing and parsing steps internally
+      const rawResult = analyze_full_program(
         this.sourceCode,
-      ) as AnalysisResult;
-      this.parserResult = semanticResult;
+      ) as unknown as JsCompilerResult;
 
-      this.analysisState = "ready";
+      // 1. Handle Lexer Tokens
+      if (rawResult.tokens) {
+        this.lexerResult = rawResult.tokens;
+      } else {
+        this.lexerResult = [];
+      }
+
+      // 2. Handle Errors
+      if (!rawResult.success && rawResult.errors.length > 0) {
+        // Join the top errors for the UI banner
+        this.error = rawResult.errors.slice(0, 2).join(". ");
+      }
+
+      // 3. Handle Parser Result
+      // TODO: Your Rust backend currently returns `program` (AST), but the frontend
+      // expects `AnalysisResult` (Symbol Table + Line Analysis).
+      // For now, we leave this null or valid to prevent crashes,
+      // waiting for Phase 2B implementation in Rust.
+      if (rawResult.program) {
+        // Placeholder to prevent UI crash if tab is clicked
+        this.parserResult = {
+          lines: [],
+          symbol_table: [],
+        };
+      }
+
+      this.analysisState = rawResult.success ? "ready" : "error";
     } catch (err) {
       this.analysisState = "error";
       this.error = err instanceof Error ? err.message : "Analysis failed";
+      console.error(err);
     }
   };
 }

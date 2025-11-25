@@ -1,26 +1,18 @@
-// src/lib/types/tokenTypes.svelte.ts
+import type { WasmToken } from "./tokenTypes.svelte.ts";
 
-export interface WasmToken {
-  element: string;
-  category: string;
-  detail: string;
-  line: number;
+// The structure returned by src/lib.rs -> JsCompilerResult
+export interface JsCompilerResult {
+  success: boolean;
+  tokens: WasmToken[] | null;
+  errors: string[];
+  program: any | null; // The AST (defined loosely here as it's a complex nested object)
 }
 
-export type TokenCategory =
-  | "instruction"
-  | "directive"
-  | "register"
-  | "symbol"
-  | "constant"
-  | "punctuation"
-  | "invalid";
-
-// --- NUEVO: Estructuras para la Fase 2 (Análisis Semántico) ---
-
+// Keep these for the Frontend components (ParserView),
+// though currently Rust isn't returning them calculated yet.
 export interface SymbolRecord {
   name: string;
-  type_: "Variable" | "Label" | "Constant"; // Matches Rust "type_" field
+  type_: "Variable" | "Label" | "Constant";
   data_type: "Byte" | "Word" | "Dword" | "None";
   value: number;
   segment: string;

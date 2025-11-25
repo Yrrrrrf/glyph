@@ -1,12 +1,12 @@
 // src/lib/test.ts
-import { analyze_assembly, initWasm } from "./wasm.ts";
 
-interface WasmToken {
-  element: string;
-  category: string;
-  detail: string;
-  line: number;
-}
+// this line specifies that we want to use Deno's standard library types
+// ,ns extention
+/// <reference lib="deno.ns" />
+
+import { analyze_assembly, initWasm } from "./wasm.ts";
+import type { JsCompilerResult } from "./types/analysisTypes.ts";
+import type { WasmToken } from "./types/tokenTypes.svelte.ts";
 
 function getFilename(): string {
   if (Deno.args.length === 0) {
@@ -22,73 +22,56 @@ function readFile(filename: string): string {
     console.log(`📄 Loaded ${content.length} characters from ${filename}\n`);
     return content;
   } catch (error) {
-    console.error(`❌ Error reading '${filename}': ${error.message}`);
+    if (error instanceof Error) {
+      console.error(`❌ Error reading '${filename}': ${error.message}`);
+    }
     Deno.exit(1);
   }
 }
 
-// UPDATED: Now shows 4 columns to match Rust's debug output
-function printLexerOutput(tokens: WasmToken[]): void {
+function printLexerOutput(tokens: WasmToken[] | null): void {
   console.log("=== LEXER OUTPUT ===");
 
-  if (tokens.length === 0) {
-    console.log("(No tokens found)\n");
+  if (!tokens || tokens.length === 0) {
+    console.log("(No tokens produced)\n");
     return;
   }
 
-  console.log(`Total tokens: ${tokens.length}\n`);
+  console.log(
+    "Line".padEnd(10) + " | " +
+      "Category".padEnd(22) + " | " +
+      "Value".padEnd(30) + " | " +
+      "Detail",
+  );
+  console.log("-".repeat(100));
 
-  // Match Rust's format: "Line {:>3} | {:>12} | {:?}"
-  // Added detail column for full type information
   for (const token of tokens) {
-    console.log(
-      `Line ${String(token.line).padStart(3)} | ` +
-        `${token.category.padStart(12)} | ` +
-        `${token.element.padEnd(30)} | ` +
-        `${token.detail}`,
-    );
+    const lineStr = String(token.line + 1).padEnd(10);
+    const catStr = token.category.padEnd(22);
+    const valStr = token.element.padEnd(30);
+
+    // Simple color for errors similar to Rust
+    if (
+      token.category.includes("Error") || token.category.includes("invalid")
+    ) {
+      console.log(
+        `\x1b[31m${lineStr} | ${catStr} | ${valStr} | ${token.detail}\x1b[0m`,
+      );
+    } else {
+      console.log(`${lineStr} | ${catStr} | ${valStr} | ${token.detail}`);
+    }
   }
+  console.log();
 }
 
-function printParserOutput(tokens: WasmToken[]): void {
-  console.log("\n=== PARSER OUTPUT ===");
-  console.log("(Parser not yet integrated in TypeScript)");
-  console.log(`Total tokens available: ${tokens.length}`);
-}
+function printErrors(errors: string[]): void {
+  if (errors.length === 0) return;
 
-function parseTokens(rawResult: any): WasmToken[] {
-  console.log("🔍 Debugging WASM result structure...");
-  console.log("   Type:", typeof rawResult);
-  console.log("   Is Array?", Array.isArray(rawResult));
-
-  if (!Array.isArray(rawResult)) {
-    throw new Error(`Expected array from WASM, got ${typeof rawResult}`);
+  console.log("=== COMPILER ERRORS ===");
+  for (const err of errors) {
+    console.log(`❌ ${err}`);
   }
-
-  console.log(`   Array length: ${rawResult.length}`);
-
-  if (rawResult.length > 0) {
-    const first = rawResult[0];
-    console.log("   First element:", first);
-    console.log("   First element type:", typeof first);
-    console.log(
-      "   First element keys:",
-      typeof first === "object" && first ? Object.keys(first) : "N/A",
-    );
-  }
-
-  return rawResult.map((item, index) => {
-    const element = item?.element !== undefined
-      ? String(item.element)
-      : `<?token_${index}?>`;
-    const category = item?.category !== undefined
-      ? String(item.category)
-      : "unknown";
-    const detail = item?.detail !== undefined ? String(item.detail) : "";
-    const line = item?.line !== undefined ? Number(item.line) : 0;
-
-    return { element, category, detail, line };
-  });
+  console.log();
 }
 
 async function main(): Promise<void> {
@@ -98,18 +81,33 @@ async function main(): Promise<void> {
   console.log("✅ WebAssembly module initialized\n");
 
   const filename = getFilename();
-  const code = Deno.args.length > 0 ? readFile(filename) : `MOV AX, 10h
-ADD AX, 1`;
+  const code = Deno.args.length > 0
+    ? readFile(filename)
+    : `MOV AX, 10h\nADD AX, 1`;
 
   console.log(`=== Processing: ${filename} ===\n`);
 
-  const rawResult = analyze_assembly(code);
-  const tokens = parseTokens(rawResult);
+  // CAST the result to our known interface
+  const rawResult = analyze_assembly(code) as unknown as JsCompilerResult;
 
-  printLexerOutput(tokens);
-  printParserOutput(tokens);
+  // 1. Print Lexer Output (if tokens exist)
+  printLexerOutput(rawResult.tokens);
 
-  console.log("\n✅ Test complete!");
+  // 2. Print Errors (Lexer, Parser, or Validator errors)
+  printErrors(rawResult.errors);
+
+  // 3. Status
+  if (rawResult.success) {
+    console.log("\n✅ Analysis Successful");
+    if (rawResult.program) {
+      console.log(
+        `🌳 AST Generated with ${rawResult.program.length} statements.`,
+      );
+    }
+  } else {
+    console.log("\n⚠️ Analysis Completed with Errors");
+    Deno.exit(1);
+  }
 }
 
 if (import.meta.main) {
