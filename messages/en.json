@@ -11,7 +11,6 @@
   "analysis_panel_category_detail": "Category / Detail",
   "page_load_assembly_file": "Load Assembly File",
   "page_switch_to_lexer_tab": "Or switch to the \"Lexer\" tab to start typing from scratch.",
-  "page_code_editor": "Code Editor",
   "page_analyzing": "Analyzing...",
   "page_ready": "Ready",
   "page_token_stream": "Token Stream",

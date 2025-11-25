@@ -11,7 +11,6 @@
   "analysis_panel_category_detail": "Categoría / Detalle",
   "page_load_assembly_file": "Cargar Archivo Assembly",
   "page_switch_to_lexer_tab": "O cambia a la pestaña \"Lexer\" para empezar a escribir desde cero.",
-  "page_code_editor": "Editor de Código",
   "page_analyzing": "Analizando...",
   "page_ready": "Listo",
   "page_token_stream": "Flujo de Tokens",

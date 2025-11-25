@@ -30,14 +30,11 @@
       <div class="flex h-full gap-4">
         <!-- Editor Column -->
         <div class="flex-1 flex flex-col min-w-0">
-          <div class="flex justify-between items-center mb-2">
-            <h3 class="text-lg font-semibold flex items-center gap-2">
-                <span>📝</span> {m.page_code_editor()}
-            </h3>
-            <span class="text-xs text-base-content/50">
+          <!-- <div class="flex justify-between items-center mb-2"> -->
+            <!-- <span class="text-xs text-base-content/50">
                 {glyphStore.analysisState === 'loading' ? m.page_analyzing() : m.page_ready()}
-            </span>
-          </div>
+            </span> -->
+          <!-- </div> -->
           
           <div class="flex-1 min-h-0">
              <CodeEditor 
@@ -50,9 +47,6 @@
 
         <!-- Analysis Column -->
         <div class="flex-1 flex flex-col min-w-0">
-          <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
-            <span>🔍</span> {m.page_token_stream()}
-          </h3>
           <div class="flex-1 min-h-0">
             <AnalysisPanel
                 tokens={glyphStore.lexerResult ?? []} 

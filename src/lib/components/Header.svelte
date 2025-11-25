@@ -19,7 +19,7 @@
         {/snippet}
     </ThemeSelector>
 
-    <LanguageSelector />
+    <!-- <LanguageSelector /> -->
 
     <h1 class="text-xl font-bold">Glyph</h1>
     
