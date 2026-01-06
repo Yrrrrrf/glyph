@@ -54,6 +54,7 @@ pub mod pseudoinstruction {
                 | "OFFSET"
                 | "ENDS"
                 | "SEGMENT"
+                | "DUP"
                 | ".CODE"
                 | ".DATA"
                 | ".STACK"

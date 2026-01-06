@@ -36,7 +36,7 @@ where
         Token::Constant(constant::Type::NumberDecimal(v)) => v,
         Token::Constant(constant::Type::NumberHex(v, _)) => v,
     }
-    .then_ignore(select! { Token::Symbol(s) if s.eq_ignore_ascii_case("DUP") => s })
+    .then_ignore(select! { Token::Pseudoinstruction(s) if s == "DUP" => s })
     .then_ignore(just(Token::Punctuation(PunctuationType::LParen)))
     .then(operand.clone())
     .then_ignore(just(Token::Punctuation(PunctuationType::RParen)))
@@ -45,7 +45,7 @@ where
         value: Box::new(val),
     });
 
-    let variable_value = choice((dup_val, operand.clone()));
+    let variable_value = choice((dup_val.clone(), operand.clone()));
 
     // --- STATEMENTS ---
 
@@ -80,23 +80,27 @@ where
             value: val,
         });
 
-    // 4. Data (Anonymous definition, e.g., "DW 100 DUP(0)")
-    // 4. Data (Existing Named)
-    let data = select! { Token::Pseudoinstruction(d) => d }
-        .then(variable_value.clone())
+    // 4. Data (Anonymous definition)
+    // We split this into two explicit cases to ensure DUP is prioritized
+
+    // Case A: DW 100 DUP(0)
+    let anonymous_dup = select! { Token::Pseudoinstruction(d) => d }
+        .then(dup_val.clone())
         .map(|(dir, val)| Statement::Data {
             directive: dir,
             value: val,
         });
 
-    // --- NEW: ANONYMOUS DATA (For Stack) ---
-    // Matches "DW 100 DUP(0)" directly
-    let anonymous_data = select! { Token::Pseudoinstruction(d) => d }
-        .then(variable_value.clone())
+    // Case B: DW 100
+    let anonymous_std = select! { Token::Pseudoinstruction(d) => d }
+        .then(operand.clone())
         .map(|(dir, val)| Statement::Data {
             directive: dir,
             value: val,
         });
+
+    // Priority: Try DUP first, then standard
+    let anonymous_data = choice((anonymous_dup, anonymous_std));
 
     // 5. Segment
     let segment = select! { Token::Pseudoinstruction(d) => d }.map(|name| {
@@ -112,8 +116,15 @@ where
         .then(select! { Token::Symbol(l) => l }.or_not())
         .map(|(_, l)| Statement::End { label: l });
 
-    let statement =
-        choice((segment, label, variable, data, end_stmt, instruction)).map(LineNode::Statement);
+    let statement = choice((
+        label,
+        variable,
+        anonymous_data,
+        segment,
+        end_stmt,
+        instruction,
+    ))
+    .map(LineNode::Statement);
 
     // --- LINE PARSER WITH RECOVERY ---
     let line = choice((
