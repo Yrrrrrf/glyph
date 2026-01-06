@@ -24,6 +24,7 @@ pub struct JsSymbolRecord {
     pub data_type: String,
     pub value: u64,
     pub segment: String,
+    pub line: usize,
 }
 
 #[derive(Serialize)]
@@ -100,7 +101,11 @@ fn generate_line_analysis(
         }
 
         let (addr, code) = if let Some((a, c)) = stmt_info.get(&line_num) {
-            (Some(a.clone()), Some(c.clone()))
+            if is_correct {
+                (Some(a.clone()), Some(c.clone()))
+            } else {
+                (Some(a.clone()), None) // Keep address but hide code
+            }
         } else {
             (None, None)
         };
@@ -115,6 +120,15 @@ fn generate_line_analysis(
         });
     }
     lines
+}
+
+fn get_line_content(source: &str, offset: usize) -> &str {
+    let start = source[..offset].rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let end = source[offset..]
+        .find('\n')
+        .map(|i| offset + i)
+        .unwrap_or(source.len());
+    &source[start..end]
 }
 
 #[wasm_bindgen]
@@ -183,7 +197,16 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
     let (ast, parse_errs) = parser().parse(token_stream).into_output_errors();
 
     for err in parse_errs {
-        let msg = format!("[PAR] Invalid syntax or missing token");
+        // Forensic analysis on the full line
+        let line_content = get_line_content(source, err.span().start);
+        let diag = semantics::diagnostics::diagnose_syntax_error(line_content);
+
+        let msg = if diag != "Sintaxis inválida o token faltante" {
+            format!("[PAR] {}", diag)
+        } else {
+            format!("[PAR] Invalid syntax or missing token")
+        };
+
         all_errors_msg.push(msg);
         all_error_spans.push((err.span().start, err.span().end));
     }
@@ -192,13 +215,15 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
 
     if let Some(prog) = &program {
         for spanned in prog {
-            if let LineNode::Error(msg) = &spanned.node {
-                all_errors_msg.push(format!("[PAR] {}", msg));
+            if let LineNode::Error(_) = &spanned.node {
+                // Forensic analysis on the full line (using span start is safe)
+                let line_content = get_line_content(source, spanned.span.0);
+                let specific_msg = semantics::diagnostics::diagnose_syntax_error(line_content);
+                all_errors_msg.push(format!("[PAR] {}", specific_msg));
                 all_error_spans.push(spanned.span);
             }
         }
     }
-
     let mut js_symbol_table = Vec::new();
     let mut stmt_info_map = HashMap::new();
     let mut semantic_error_map = HashMap::new();
@@ -207,18 +232,18 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
         let (semantic_errs, mut symbol_info_map) = validate(prog);
 
         for err in semantic_errs {
-            // let msg = format!("[SEM] {}", err.message);
+            let msg = format!("[SEM] {}", err.message);
             // We store it in the map for line attribution
-            // Note: If multiple errors on one line, last one wins or we append? 
+            // Note: If multiple errors on one line, last one wins or we append?
             // Let's overwrite for now or join.
             if let Some(existing) = semantic_error_map.get_mut(&err.line) {
-                *existing = format!("{}; {}", existing, err.message);
+                *existing = format!("{}; {}", existing, msg);
             } else {
-                semantic_error_map.insert(err.line, err.message.clone());
+                semantic_error_map.insert(err.line, msg.clone());
             }
-            
+
             // Also add to main errors list for global status
-             all_errors_msg.push(format!("Line {}: {}", err.line, err.message));
+            all_errors_msg.push(format!("Line {}: {}", err.line, err.message));
         }
 
         let address_map = pass_one(prog, &mut symbol_info_map);
@@ -231,6 +256,7 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
                 data_type: format!("{:?}", info.data_type),
                 value: info.offset.unwrap_or(0),
                 segment: info.segment,
+                line: info.line_defined,
             });
         }
         js_symbol_table.sort_by(|a, b| a.name.cmp(&b.name));

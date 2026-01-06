@@ -23,7 +23,7 @@
         text = fullMsg.replace('[PAR]', '').trim();
         badgeClass = 'badge-error text-error-content';   // Red for Parser
     } else if (fullMsg.startsWith('[SEM]')) {
-        type = 'LOGIC';
+        type = 'VALIDACIÓN';
         text = fullMsg.replace('[SEM]', '').trim();
         badgeClass = 'badge-secondary text-secondary-content'; // Purple for Semantics
     }
@@ -147,7 +147,7 @@
                     </td>
 
                     <!-- Opcode Column -->
-                    <td class="font-mono text-[10px] text-secondary font-bold text-center select-none align-middle tracking-tight">
+                    <td class="font-mono text-[10px] text-secondary/70 font-bold text-center select-none align-middle tracking-tight">
                         {#if line.machine_code}
                            {line.machine_code}
                         {/if}
@@ -221,7 +221,8 @@
                 </tr>
             {:else}
                 {#each glyphStore.parserResult.symbol_table as sym}
-                <tr class="hover:bg-base-200 transition-colors">
+                <tr class="hover:bg-base-200 transition-colors cursor-pointer" 
+                    onclick={() => glyphStore.setSelectedLine(sym.line)}>
                     <td class="font-bold text-primary font-mono pl-4">{sym.name}</td>
                     <td>
                         <span class="badge badge-sm border-none font-semibold

@@ -12,26 +12,11 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
         text::digits(16)
             .to_slice()
             .then_ignore(just('h').or(just('H')))
-            .try_map(|s: &str, span| {
-                if s.chars().next().map_or(false, |c| c.is_ascii_alphabetic()) {
-                    Err(Rich::custom(
-                        span,
-                        "Hex literal must start with a decimal digit (0-9)",
-                    ))
-                } else {
-                    Ok(s)
-                }
-            })
             .map(|s: &str| {
-                let chars: Vec<char> = s.chars().collect();
-                if chars.len() > 1 && chars[0] == '0' && chars[1].is_ascii_digit() {
-                    Token::Constant(constant::Type::NumberHex(
-                        u64::from_str_radix(s, 16).unwrap_or(0),
-                        format!("{}h", s),
-                    ))
-                } else {
-                    Token::Error(format!("Necessary leading zero"))
-                }
+                Token::Constant(constant::Type::NumberHex(
+                    u64::from_str_radix(s, 16).unwrap_or(0),
+                    format!("{}h", s),
+                ))
             })
     };
 
@@ -124,20 +109,6 @@ fn validate_compounds<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
         .then(just(']'))
         .map(|((_, content), _)| Token::Symbol(format!("[{}]", content)));
 
-    let dups = text::ascii::ident()
-        .try_map(|s: &str, span| {
-            if s.eq_ignore_ascii_case("dup") {
-                Ok(s)
-            } else {
-                Err(Rich::custom(span, "not dup"))
-            }
-        })
-        .then(text::whitespace().or_not())
-        .then(just('('))
-        .then(none_of(")\r\n").repeated().collect::<String>())
-        .then(just(')'))
-        .map(|((((_, _), _), content), _)| Token::Pseudoinstruction(format!("dup({})", content)));
-
     choice((
         mk_compound(".STACK", "SEGMENT"),
         mk_compound(".DATA", "SEGMENT"),
@@ -146,7 +117,6 @@ fn validate_compounds<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
         mk_compound("WORD", "PTR"),
         mk_compound("DWORD", "PTR"),
         arrays,
-        dups,
     ))
 }
 

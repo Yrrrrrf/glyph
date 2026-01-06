@@ -26,6 +26,7 @@ export interface SymbolRecord {
   data_type: string;
   value: number;
   segment: string;
+  line: number;
 }
 
 export interface LineAnalysis {

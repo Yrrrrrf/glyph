@@ -23,6 +23,9 @@ pub enum Statement {
     Segment {
         name: String,
     },
+    End {
+        label: Option<String>,
+    },
     SegmentEnd,
     Variable {
         name: String,
