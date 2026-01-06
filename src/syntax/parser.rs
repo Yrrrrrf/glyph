@@ -34,7 +34,10 @@ where
     // --- STATEMENTS ---
 
     // 1. Instruction
-    let instruction = select! { Token::Instruction(_, op) => op }
+    let instruction = select! {
+        Token::Instruction(_, op) => op,
+        Token::Symbol(op) => op,
+    }
         .then(
             operand
                 .clone()

@@ -25,7 +25,7 @@
 
   // --- FILTER LOGIC ---
   // Create a derived view that excludes Punctuation tokens
-  let visibleTokens = $derived(tokens.filter((t: any) => t.category !== 'Punctuation'));
+  let visibleTokens = $derived(tokens.filter((t: any) => t.category !== 'Punctuation' && t.category !== 'Control'));
 
   // --- I18N MAPPING HELPERS ---
   const norm = (s: string) => s.toLowerCase().replace(/ /g, '_');

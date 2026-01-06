@@ -74,6 +74,7 @@ fn generate_line_analysis(
     source: &str,
     errors: &[String],
     error_spans: &[(usize, usize)],
+    semantic_errors: &HashMap<usize, String>,
     stmt_info: &HashMap<usize, (String, String)>,
 ) -> Vec<JsLineAnalysis> {
     let mut lines = Vec::new();
@@ -82,12 +83,20 @@ fn generate_line_analysis(
         let mut error_msg = None;
         let mut is_correct = true;
 
+        // 1. Check Parser/Lexer Errors (Span-based)
         for (idx, (start, _end)) in error_spans.iter().enumerate() {
             if calculate_line(source, *start) == line_num {
                 is_correct = false;
                 error_msg = Some(errors[idx].clone());
                 break;
             }
+        }
+
+        // 2. Check Semantic Errors (Line-based)
+        // Overwrites parser error if present, or adds if clean so far
+        if let Some(msg) = semantic_errors.get(&line_num) {
+            is_correct = false;
+            error_msg = Some(msg.clone());
         }
 
         let (addr, code) = if let Some((a, c)) = stmt_info.get(&line_num) {
@@ -150,8 +159,13 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
     };
 
     if tokens_result.is_none() {
-        let lines =
-            generate_line_analysis(source, &all_errors_msg, &all_error_spans, &HashMap::new());
+        let lines = generate_line_analysis(
+            source,
+            &all_errors_msg,
+            &all_error_spans,
+            &HashMap::new(),
+            &HashMap::new(),
+        );
         return JsCompilerResult {
             success: false,
             tokens: None,
@@ -187,14 +201,24 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
 
     let mut js_symbol_table = Vec::new();
     let mut stmt_info_map = HashMap::new();
+    let mut semantic_error_map = HashMap::new();
 
     if let Some(prog) = &program {
         let (semantic_errs, mut symbol_info_map) = validate(prog);
 
         for err in semantic_errs {
-            let msg = format!("[SEM] {}", err.message);
-            all_errors_msg.push(msg);
-            all_error_spans.push((0, 0));
+            // let msg = format!("[SEM] {}", err.message);
+            // We store it in the map for line attribution
+            // Note: If multiple errors on one line, last one wins or we append? 
+            // Let's overwrite for now or join.
+            if let Some(existing) = semantic_error_map.get_mut(&err.line) {
+                *existing = format!("{}; {}", existing, err.message);
+            } else {
+                semantic_error_map.insert(err.line, err.message.clone());
+            }
+            
+            // Also add to main errors list for global status
+             all_errors_msg.push(format!("Line {}: {}", err.line, err.message));
         }
 
         let address_map = pass_one(prog, &mut symbol_info_map);
@@ -206,7 +230,7 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
                 type_: format!("{:?}", info.type_),
                 data_type: format!("{:?}", info.data_type),
                 value: info.offset.unwrap_or(0),
-                segment: "DS".to_string(),
+                segment: info.segment,
             });
         }
         js_symbol_table.sort_by(|a, b| a.name.cmp(&b.name));
@@ -228,8 +252,13 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
         }
     }
 
-    let line_analysis =
-        generate_line_analysis(source, &all_errors_msg, &all_error_spans, &stmt_info_map);
+    let line_analysis = generate_line_analysis(
+        source,
+        &all_errors_msg,
+        &all_error_spans,
+        &semantic_error_map,
+        &stmt_info_map,
+    );
 
     JsCompilerResult {
         success: all_errors_msg.is_empty(),
