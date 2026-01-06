@@ -81,7 +81,17 @@ where
         });
 
     // 4. Data (Anonymous definition, e.g., "DW 100 DUP(0)")
+    // 4. Data (Existing Named)
     let data = select! { Token::Pseudoinstruction(d) => d }
+        .then(variable_value.clone())
+        .map(|(dir, val)| Statement::Data {
+            directive: dir,
+            value: val,
+        });
+
+    // --- NEW: ANONYMOUS DATA (For Stack) ---
+    // Matches "DW 100 DUP(0)" directly
+    let anonymous_data = select! { Token::Pseudoinstruction(d) => d }
         .then(variable_value.clone())
         .map(|(dir, val)| Statement::Data {
             directive: dir,
