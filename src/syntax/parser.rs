@@ -80,7 +80,7 @@ where
             value: val,
         });
 
-    // 4. Data
+    // 4. Data (Anonymous definition, e.g., "DW 100 DUP(0)")
     let data = select! { Token::Pseudoinstruction(d) => d }
         .then(variable_value.clone())
         .map(|(dir, val)| Statement::Data {

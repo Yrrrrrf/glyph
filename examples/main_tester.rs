@@ -3,6 +3,7 @@ use std::fs;
 
 fn main() {
     let source = fs::read_to_string("static/x8086/test_astonishing.asm")
+        // let source = fs::read_to_string("static/x8086/plantilla.asm")
         .expect("Something went wrong reading the file");
 
     let result = analyze_full_program_struct(&source);

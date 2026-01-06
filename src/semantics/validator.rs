@@ -35,7 +35,7 @@ pub struct SymbolInfo {
 
 const ALLOWED_INSTRUCTIONS: &[&str] = &[
     "CMC", "CMPSB", "NOP", "POPA", "AAD", "AAM", "MUL", "INC", "IDIV", "INT", "AND", "LEA", "OR",
-    "XOR", "JNAE", "JNE", "JNLE", "LOOPE", "JA", "JC", "MOV", "ADD", "SUB", "DEC", "RET",
+    "XOR", "JNAE", "JNE", "JNLE", "LOOPE", "JA", "JC", // , "MOV", "ADD", "SUB", "DEC", "RET",
 ];
 
 const JUMP_INSTRUCTIONS: &[&str] = &["JNAE", "JNE", "JNLE", "LOOPE", "JA", "JC"];

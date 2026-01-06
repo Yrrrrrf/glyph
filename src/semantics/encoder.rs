@@ -33,15 +33,23 @@ pub fn pass_one(
                         sym.offset = Some(location_counter);
                     }
                 }
+                // Inside the match stmt loop:
                 Statement::Variable {
-                    directive, value, ..
+                    name,
+                    directive,
+                    value,
                 } => {
+                    // START FIX
+                    if let Some(sym) = symbol_table.get_mut(name) {
+                        sym.offset = Some(location_counter);
+                    }
+                    // END FIX
                     let size = get_variable_size(directive, value);
                     location_counter += size;
                 }
-                Statement::Data {
-                    directive, value, ..
-                } => {
+                Statement::Data { directive, value } => {
+                    // Note: Data statements usually don't have names in your AST unless
+                    // wrapped in Variable, but if they do, update here too.
                     let size = get_variable_size(directive, value);
                     location_counter += size;
                 }
