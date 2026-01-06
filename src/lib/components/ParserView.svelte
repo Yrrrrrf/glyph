@@ -10,16 +10,16 @@
 
   // Helper to parse the error string from Rust
   function parseError(fullMsg: string) {
-    let type = 'ERR';
+    let type = 'ERROR';
     let text = fullMsg;
     let badgeClass = 'badge-error';
 
     if (fullMsg.startsWith('[LEX]')) {
-        type = 'LEXER';
+        type = 'LÉXICO';
         text = fullMsg.replace('[LEX]', '').trim();
         badgeClass = 'badge-warning text-warning-content'; // Yellow for Lexer
     } else if (fullMsg.startsWith('[PAR]')) {
-        type = 'PARSER';
+        type = 'SINTAXIS';
         text = fullMsg.replace('[PAR]', '').trim();
         badgeClass = 'badge-error text-error-content';   // Red for Parser
     } else if (fullMsg.startsWith('[SEM]')) {
@@ -115,9 +115,9 @@
         <table class="table table-xs table-pin-rows w-full">
           <thead>
             <tr class="bg-base-100 text-base-content/50">
-              <th class="w-16 text-center text-primary font-bold">Addr</th>
+              <th class="w-16 text-center text-primary font-bold">Dir</th>
               <th class="w-12 font-normal text-center">{m.parser_view_ln()}</th>
-              <th class="w-32 text-center text-secondary font-bold">Opcode</th>
+              <th class="w-32 text-center text-secondary font-bold">Cód. Máq.</th>
               <th class="font-normal">{m.parser_view_instruction_source()}</th>
               <th class="w-24 text-center font-normal">{m.parser_view_status()}</th>
               <th class="font-normal">{m.parser_view_details()}</th>
