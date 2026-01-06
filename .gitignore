@@ -15,7 +15,7 @@ temp/
 **.lock
 
 # project specific ignores
-x8086/
+# x8086/
 repos/
 
 # Paraglide
