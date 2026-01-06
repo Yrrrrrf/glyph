@@ -25,12 +25,12 @@ fn validate_constants<'src>() -> impl Parser<'src, &'src str, Token, LexerError<
             .map(|s: &str| {
                 let chars: Vec<char> = s.chars().collect();
                 if chars.len() > 1 && chars[0] == '0' && chars[1].is_ascii_digit() {
-                    Token::Error(format!("Unnecessary leading zero"))
-                } else {
                     Token::Constant(constant::Type::NumberHex(
                         u64::from_str_radix(s, 16).unwrap_or(0),
                         format!("{}h", s),
                     ))
+                } else {
+                    Token::Error(format!("Necessary leading zero"))
                 }
             })
     };
@@ -198,14 +198,15 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<(Token, SimpleSpan)>, L
         validate_constants(),
         validate_identifiers(), // This now handles Instruction Logic internally
         validate_punctuation(),
+        text::newline().to(Token::Newline),
     ));
 
     // ... (rest of function: comments, whitespace, etc. remains same) ...
     let comment = just(';').then(any().and_is(text::newline().not()).repeated());
-    let whitespace = any()
-        .filter(|c: &char| c.is_whitespace())
-        .repeated()
-        .at_least(1);
+
+    // Whitespace excluding newline
+    let whitespace = one_of(" \t").repeated().at_least(1);
+
     let ignored = choice((whitespace.ignored(), comment.ignored())).repeated();
 
     ignored

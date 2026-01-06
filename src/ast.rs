@@ -45,4 +45,17 @@ pub enum Statement {
     Unknown,
 }
 
-pub type Program = Vec<Statement>;
+#[derive(Debug, Clone, Serialize)]
+pub struct Spanned<T> {
+    pub node: T,
+    pub span: (usize, usize),
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub enum LineNode {
+    Statement(Statement),
+    Empty,
+    Error(String),
+}
+
+pub type Program = Vec<Spanned<LineNode>>;

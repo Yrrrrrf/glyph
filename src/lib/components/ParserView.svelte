@@ -115,7 +115,9 @@
         <table class="table table-xs table-pin-rows w-full">
           <thead>
             <tr class="bg-base-100 text-base-content/50">
+              <th class="w-16 text-center text-primary font-bold">Addr</th>
               <th class="w-12 font-normal text-center">{m.parser_view_ln()}</th>
+              <th class="w-32 text-center text-secondary font-bold">Opcode</th>
               <th class="font-normal">{m.parser_view_instruction_source()}</th>
               <th class="w-24 text-center font-normal">{m.parser_view_status()}</th>
               <th class="font-normal">{m.parser_view_details()}</th>
@@ -132,13 +134,27 @@
                     class:border-transparent={line.is_correct}
                     class:hover:bg-base-200={line.is_correct}
                 >
+                    <!-- Address Column -->
+                    <td class="font-mono text-xs text-primary text-center select-none align-middle opacity-80">
+                        {#if line.address}
+                           {line.address}
+                        {/if}
+                    </td>
+
                     <!-- Line Number -->
-                    <td class="font-mono text-base-content/40 text-center select-none">
+                    <td class="font-mono text-base-content/40 text-center select-none align-middle">
                         {line.line_number}
+                    </td>
+
+                    <!-- Opcode Column -->
+                    <td class="font-mono text-[10px] text-secondary font-bold text-center select-none align-middle tracking-tight">
+                        {#if line.machine_code}
+                           {line.machine_code}
+                        {/if}
                     </td>
                     
                     <!-- Instruction Text (Highlighted, No Comments) -->
-                    <td class="font-mono font-medium whitespace-pre text-sm">
+                    <td class="font-mono font-medium whitespace-pre text-sm align-middle">
                     {@html highlightLine(line.instruction, line.line_number)}
                     </td>
 

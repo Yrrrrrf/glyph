@@ -22,8 +22,8 @@ export type TokenCategory =
 // (Keep the Phase 2 structures if you are using them in ParserView)
 export interface SymbolRecord {
   name: string;
-  type_: "Variable" | "Label" | "Constant";
-  data_type: "Byte" | "Word" | "Dword" | "None";
+  type_: string;
+  data_type: string;
   value: number;
   segment: string;
 }
@@ -33,6 +33,8 @@ export interface LineAnalysis {
   is_correct: boolean;
   error_message: string | null;
   instruction: string;
+  address: string | null;
+  machine_code: string | null;
 }
 
 export interface AnalysisResult {

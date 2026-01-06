@@ -1,5 +1,5 @@
 // src/semantics/validator.rs
-use crate::ast::{Operand, Program, Statement};
+use crate::ast::{LineNode, Operand, Program, Statement};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -28,71 +28,79 @@ pub struct SymbolInfo {
     pub type_: SymbolType,
     pub data_type: DataType,
     pub defined: bool,
+    pub offset: Option<u64>,
 }
 
 // FIX: Updated signature (1 argument)
-pub fn validate(ast: &Program) -> Vec<CompilerError> {
+pub fn validate(ast: &Program) -> (Vec<CompilerError>, HashMap<String, SymbolInfo>) {
     let mut errors = Vec::new();
     let mut symbol_table: HashMap<String, SymbolInfo> = HashMap::new();
 
     // PASS 1: Symbol Collection
-    for stmt in ast {
-        match stmt {
-            Statement::Variable {
-                name,
-                directive,
-                value,
-            } => {
-                let dir = directive.to_uppercase();
-                let dtype = if dir == "DB" {
-                    DataType::Byte
-                } else {
-                    DataType::Word
-                };
+    for spanned in ast {
+        if let LineNode::Statement(stmt) = &spanned.node {
+            match stmt {
+                Statement::Variable {
+                    name,
+                    directive,
+                    value,
+                } => {
+                    let dir = directive.to_uppercase();
+                    let dtype = if dir == "DB" {
+                        DataType::Byte
+                    } else {
+                        DataType::Word
+                    };
 
-                symbol_table.insert(
-                    name.clone(),
-                    SymbolInfo {
-                        type_: SymbolType::Variable,
-                        data_type: dtype,
-                        defined: true,
-                    },
-                );
+                    symbol_table.insert(
+                        name.clone(),
+                        SymbolInfo {
+                            type_: SymbolType::Variable,
+                            data_type: dtype,
+                            defined: true,
+                            offset: None,
+                        },
+                    );
 
-                validate_variable_value(name, &dir, value, &mut errors);
+                    validate_variable_value(name, &dir, value, &mut errors);
+                }
+                Statement::Label(name) => {
+                    symbol_table.insert(
+                        name.clone(),
+                        SymbolInfo {
+                            type_: SymbolType::Label,
+                            data_type: DataType::None,
+                            defined: true,
+                            offset: None,
+                        },
+                    );
+                }
+                Statement::Constant { name, value: _ } => {
+                    symbol_table.insert(
+                        name.clone(),
+                        SymbolInfo {
+                            type_: SymbolType::Constant,
+                            data_type: DataType::Word,
+                            defined: true,
+                            offset: None,
+                        },
+                    );
+                }
+                _ => {}
             }
-            Statement::Label(name) => {
-                symbol_table.insert(
-                    name.clone(),
-                    SymbolInfo {
-                        type_: SymbolType::Label,
-                        data_type: DataType::None,
-                        defined: true,
-                    },
-                );
-            }
-            Statement::Constant { name, value: _ } => {
-                symbol_table.insert(
-                    name.clone(),
-                    SymbolInfo {
-                        type_: SymbolType::Constant,
-                        data_type: DataType::Word,
-                        defined: true,
-                    },
-                );
-            }
-            _ => {}
         }
     }
 
     // PASS 2: Instruction Validation
-    for stmt in ast {
-        if let Statement::Instruction { mnemonic, operands } = stmt {
-            validate_instruction(mnemonic, operands, &symbol_table, &mut errors);
+    for spanned in ast {
+        if let LineNode::Statement(stmt) = &spanned.node {
+            if let Statement::Instruction { mnemonic, operands } = stmt {
+                validate_instruction(mnemonic, operands, &symbol_table, &mut errors);
+            }
         }
     }
 
-    errors
+    (errors, symbol_table)
 }
 
 fn validate_variable_value(

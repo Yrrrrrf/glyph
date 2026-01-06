@@ -1,5 +1,5 @@
 // src/syntax/parser.rs
-use crate::ast::{Operand, Program, Statement};
+use crate::ast::{LineNode, Operand, Program, Statement};
 use crate::syntax::tokens::{PunctuationType, Token, constant};
 use chumsky::input::ValueInput;
 use chumsky::prelude::*;
@@ -33,8 +33,7 @@ where
 
     // --- STATEMENTS ---
 
-    // 1. Instruction: Matches ANY Token::Instruction(type, string)
-    // We ignore the Type (first field) for parsing logic, we just want the Mnemonic string
+    // 1. Instruction
     let instruction = select! { Token::Instruction(_, op) => op }
         .then(
             operand
@@ -79,7 +78,35 @@ where
         }
     });
 
-    choice((label, variable, instruction, segment, data))
-        .repeated()
-        .collect()
+    let statement = choice((segment, label, variable, data, instruction)).map(LineNode::Statement);
+
+    // --- LINE PARSER WITH RECOVERY ---
+    let line = choice((
+        // Case 1: Valid Statement + Newline/EOF
+        statement.then_ignore(just(Token::Newline).or(end().to(Token::Newline))),
+        // Case 2: Empty Line (just Newline)
+        just(Token::Newline).to(LineNode::Empty),
+    ))
+    .map_with(|node, e| {
+        let span: SimpleSpan = e.span();
+        crate::ast::Spanned {
+            node,
+            span: (span.start, span.end),
+        }
+    })
+    .recover_with(via_parser(
+        any()
+            .and_is(just(Token::Newline).not())
+            .repeated()
+            .then(just(Token::Newline))
+            .map_with(|_, e| {
+                let span: SimpleSpan = e.span();
+                crate::ast::Spanned {
+                    node: LineNode::Error("Syntax Error".to_string()),
+                    span: (span.start, span.end),
+                }
+            }),
+    ));
+
+    line.repeated().collect()
 }

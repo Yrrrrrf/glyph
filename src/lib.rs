@@ -4,14 +4,16 @@
 
 use chumsky::prelude::*;
 use serde::Serialize;
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 mod ast;
 mod semantics;
 mod syntax;
 
-use ast::Statement;
-// Removed Flavor import, using validator directly
+use ast::{LineNode, Statement};
+use semantics::encoder::{pass_one, pass_two};
 use semantics::validator::validate;
 use syntax::{lexer::lexer, parser::parser, tokens::Token};
 
@@ -30,6 +32,8 @@ pub struct JsLineAnalysis {
     pub is_correct: bool,
     pub error_message: Option<String>,
     pub instruction: String,
+    pub address: Option<String>,
+    pub machine_code: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -70,6 +74,7 @@ fn generate_line_analysis(
     source: &str,
     errors: &[String],
     error_spans: &[(usize, usize)],
+    stmt_info: &HashMap<usize, (String, String)>,
 ) -> Vec<JsLineAnalysis> {
     let mut lines = Vec::new();
     for (i, raw_line) in source.lines().enumerate() {
@@ -81,77 +86,42 @@ fn generate_line_analysis(
             if calculate_line(source, *start) == line_num {
                 is_correct = false;
                 error_msg = Some(errors[idx].clone());
-                break; // Take the first error that hits this line (usually the root cause)
+                break;
             }
         }
+
+        let (addr, code) = if let Some((a, c)) = stmt_info.get(&line_num) {
+            (Some(a.clone()), Some(c.clone()))
+        } else {
+            (None, None)
+        };
 
         lines.push(JsLineAnalysis {
             line_number: line_num,
             is_correct,
             error_message: error_msg,
             instruction: raw_line.to_string(),
+            address: addr,
+            machine_code: code,
         });
     }
     lines
 }
 
-fn generate_symbol_table(program: &ast::Program) -> Vec<JsSymbolRecord> {
-    let mut table = Vec::new();
-    let mut current_segment = "Unknown".to_string();
-
-    for stmt in program {
-        match stmt {
-            Statement::Segment { name } => {
-                current_segment = name.clone();
-            }
-            Statement::Label(name) => {
-                table.push(JsSymbolRecord {
-                    name: name.clone(),
-                    type_: "Label".to_string(),
-                    data_type: "None".to_string(),
-                    value: 0,
-                    segment: current_segment.clone(),
-                });
-            }
-            Statement::Variable {
-                name,
-                directive,
-                value: _,
-            } => {
-                table.push(JsSymbolRecord {
-                    name: name.clone(),
-                    type_: "Variable".to_string(),
-                    data_type: directive.to_uppercase(),
-                    value: 0,
-                    segment: current_segment.clone(),
-                });
-            }
-            Statement::Constant { name, value: _ } => {
-                table.push(JsSymbolRecord {
-                    name: name.clone(),
-                    type_: "Constant".to_string(),
-                    data_type: "Word".to_string(),
-                    value: 0,
-                    segment: current_segment.clone(),
-                });
-            }
-            _ => {}
-        }
-    }
-    table
-}
-
 #[wasm_bindgen]
 pub fn analyze_full_program(source: &str) -> JsValue {
+    let result = analyze_full_program_struct(source);
+    serde_wasm_bindgen::to_value(&result).unwrap()
+}
+
+pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
     let len = source.len();
     let (tokens_result, lex_errs) = lexer().parse(source).into_output_errors();
 
     let mut all_errors_msg = Vec::new();
     let mut all_error_spans = Vec::new();
 
-    // 1. LEXER ERRORS
     for err in lex_errs {
-        // Clean up the error message for the UI
         let msg = format!("[LEX] Unexpected input: {:?}", err.found().unwrap_or(&' '));
         all_errors_msg.push(msg);
         all_error_spans.push((err.span().start, err.span().end));
@@ -179,18 +149,17 @@ pub fn analyze_full_program(source: &str) -> JsValue {
         None
     };
 
-    // If Lexer failed catastrophically, stop here
     if tokens_result.is_none() {
-        let lines = generate_line_analysis(source, &all_errors_msg, &all_error_spans);
-        return serde_wasm_bindgen::to_value(&JsCompilerResult {
+        let lines =
+            generate_line_analysis(source, &all_errors_msg, &all_error_spans, &HashMap::new());
+        return JsCompilerResult {
             success: false,
             tokens: None,
             errors: all_errors_msg,
             program: None,
             symbol_table: vec![],
             line_analysis: lines,
-        })
-        .unwrap();
+        };
     }
 
     let tokens = tokens_result.unwrap();
@@ -199,7 +168,6 @@ pub fn analyze_full_program(source: &str) -> JsValue {
 
     let (ast, parse_errs) = parser().parse(token_stream).into_output_errors();
 
-    // 2. PARSER ERRORS
     for err in parse_errs {
         let msg = format!("[PAR] Invalid syntax or missing token");
         all_errors_msg.push(msg);
@@ -207,39 +175,70 @@ pub fn analyze_full_program(source: &str) -> JsValue {
     }
 
     let program = ast.clone();
-    let mut symbol_table = Vec::new();
 
     if let Some(prog) = &program {
-        symbol_table = generate_symbol_table(prog);
-
-        let semantic_errs = validate(prog);
-
-        // 3. SEMANTIC ERRORS
-        for err in semantic_errs {
-            let msg = format!("[SEM] {}", err.message);
-            // TODO: Semantic errors in validator.rs should ideally return spans.
-            // For now, we attach them to line 0 or rely on the UI to show global errors if no line matches.
-            // But if `err.line` is implemented in validator, we use that.
-            // Since our validator currently returns line:0, these might not attach perfectly to lines
-            // unless we upgrade validator.rs to track spans.
-            // For this requests context, we simply add them.
-            all_errors_msg.push(msg);
-            all_error_spans.push((0, 0));
+        for spanned in prog {
+            if let LineNode::Error(msg) = &spanned.node {
+                all_errors_msg.push(format!("[PAR] {}", msg));
+                all_error_spans.push(spanned.span);
+            }
         }
     }
 
-    let line_analysis = generate_line_analysis(source, &all_errors_msg, &all_error_spans);
-    let success = all_errors_msg.is_empty();
+    let mut js_symbol_table = Vec::new();
+    let mut stmt_info_map = HashMap::new();
 
-    serde_wasm_bindgen::to_value(&JsCompilerResult {
-        success,
+    if let Some(prog) = &program {
+        let (semantic_errs, mut symbol_info_map) = validate(prog);
+
+        for err in semantic_errs {
+            let msg = format!("[SEM] {}", err.message);
+            all_errors_msg.push(msg);
+            all_error_spans.push((0, 0));
+        }
+
+        let address_map = pass_one(prog, &mut symbol_info_map);
+        let machine_code_map = pass_two(prog, &address_map);
+
+        for (name, info) in symbol_info_map {
+            js_symbol_table.push(JsSymbolRecord {
+                name: name,
+                type_: format!("{:?}", info.type_),
+                data_type: format!("{:?}", info.data_type),
+                value: info.offset.unwrap_or(0),
+                segment: "DS".to_string(),
+            });
+        }
+        js_symbol_table.sort_by(|a, b| a.name.cmp(&b.name));
+
+        for (idx, spanned) in prog.iter().enumerate() {
+            let line = calculate_line(source, spanned.span.0);
+
+            let addr_str = if let Some(addr) = address_map.get(&idx) {
+                format!("{:04X}", addr)
+            } else {
+                String::new()
+            };
+
+            let code_str = machine_code_map.get(&idx).cloned().unwrap_or_default();
+
+            if !addr_str.is_empty() || !code_str.is_empty() {
+                stmt_info_map.insert(line, (addr_str, code_str));
+            }
+        }
+    }
+
+    let line_analysis =
+        generate_line_analysis(source, &all_errors_msg, &all_error_spans, &stmt_info_map);
+
+    JsCompilerResult {
+        success: all_errors_msg.is_empty(),
         tokens: js_tokens,
         errors: all_errors_msg,
         program,
-        symbol_table,
-        line_analysis,
-    })
-    .unwrap()
+        symbol_table: js_symbol_table,
+        line_analysis: line_analysis,
+    }
 }
 
 #[wasm_bindgen]

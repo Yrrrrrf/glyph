@@ -141,6 +141,7 @@ pub enum Token {
     Symbol(String),
     Punctuation(PunctuationType),
     Error(String),
+    Newline,
 }
 
 impl Token {
@@ -153,6 +154,7 @@ impl Token {
             Token::Symbol(_) => "Symbol".to_string(),
             Token::Punctuation(_) => "Punctuation".to_string(),
             Token::Error(_) => "Error".to_string(),
+            Token::Newline => "Control".to_string(),
         }
     }
 
@@ -172,6 +174,7 @@ impl Token {
                 constant::Type::Char(_) => "Char".to_string(),
             },
             Token::Error(e) => format!("{}", e),
+            Token::Newline => "Newline".to_string(),
         }
     }
 }
@@ -187,6 +190,7 @@ impl fmt::Display for Token {
             Token::Punctuation(p) => write!(f, "{:?}", p),
             Token::Constant(c) => write!(f, "{:?}", c),
             Token::Error(s) => write!(f, "Error({})", s),
+            Token::Newline => write!(f, "\\n"),
         }
     }
 }
