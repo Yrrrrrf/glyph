@@ -26,7 +26,7 @@ echo -e "${GREEN}✓ Cleaned${NC}"
 
 # Build WASM
 echo -e "${YELLOW}Building WASM (release)...${NC}"
-cargo build --target wasm32-unknown-unknown --release
+cargo build --lib --target wasm32-unknown-unknown --release
 echo -e "${GREEN}✓ Built${NC}"
 
 # Generate bindings

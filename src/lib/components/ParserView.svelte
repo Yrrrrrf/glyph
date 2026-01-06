@@ -159,13 +159,11 @@
                     </td>
 
                     <!-- Status Badge -->
-                    <td class="text-center">
+                    <td class="text-center font-bold text-xs">
                     {#if !line.is_correct}
-                        <div class="tooltip" data-tip="Error">
-                            <span class="badge badge-xs badge-error font-bold text-white shadow-sm">ERR</span>
-                        </div>
+                        <span class="text-error">Incorrecta</span>
                     {:else}
-                        <span class="opacity-0 group-hover:opacity-20 text-success text-xs font-bold transition-opacity">OK</span>
+                        <span class="text-success">Correcta</span>
                     {/if}
                     </td>
 

@@ -46,7 +46,7 @@
   "token_det_conditional_jump": "Salto Condicional",
   "token_det_interrupt": "Interrupción",
   "token_det_cpu_register": "Registro CPU",
-  "token_det_decimal": "Decimal",
+  "token_det_decimal": "Constante Numérica Decimal",
   "token_det_hexadecimal": "Hexadecimal",
   "token_det_binary": "Binario",
   "token_det_string": "Cadena de texto",

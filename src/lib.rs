@@ -240,8 +240,3 @@ pub fn analyze_full_program_struct(source: &str) -> JsCompilerResult {
         line_analysis: line_analysis,
     }
 }
-
-#[wasm_bindgen]
-pub fn analyze_assembly(source: &str) -> JsValue {
-    analyze_full_program(source)
-}

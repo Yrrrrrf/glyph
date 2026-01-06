@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export function analyze_full_program(source: string): any;
 
 export type InitInput =
   | RequestInfo
@@ -10,8 +11,14 @@ export type InitInput =
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly main: (a: number, b: number) => number;
-  readonly __wbindgen_start: () => void;
+  readonly analyze_full_program: (a: number, b: number) => number;
+  readonly __wbindgen_export: (a: number, b: number) => number;
+  readonly __wbindgen_export2: (
+    a: number,
+    b: number,
+    c: number,
+    d: number,
+  ) => number;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

@@ -1,7 +1,7 @@
 // src/lib/wasm.ts
-import init, { analyze_assembly, analyze_full_program } from "./pkg/glyph.js"; // <--- Add analyze_full_program
+import init, { analyze_full_program } from "./pkg/glyph.js"; // <--- Add analyze_full_program
 
-export { analyze_assembly, analyze_full_program }; // <--- Export it
+export { analyze_full_program }; // <--- Export it
 
 let wasmReadyPromise: Promise<void> | null = null;
 

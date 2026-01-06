@@ -1,5 +1,5 @@
 // src/lib/stores/glyphStore.svelte.ts
-import { analyze_assembly, analyze_full_program } from "$lib/wasm";
+import { analyze_full_program } from "$lib/wasm";
 import type { WasmToken } from "$lib/types/tokenTypes.svelte";
 import type {
   AnalysisResult,
